@@ -1,0 +1,10 @@
+{
+	"autodeskProduct":	"Fusion360",
+	"type":	"script",
+	"author":	"Bob M",
+	"description":	{
+		"":	"First attempt at generating splines from boat hull offset table lines"
+	},
+	"supportedOS":	"windows|mac",
+	"editEnabled":	true
+}
