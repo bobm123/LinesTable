@@ -1,7 +1,10 @@
 
-import numpy as np
+import json
+import logging
 import pandas as pd
 import sys
+
+logging.basicConfig(filename='offsets2solid.log',level=logging.DEBUG)
 
 
 def fie_to_di(d):
@@ -18,6 +21,7 @@ def fie_to_di(d):
     else:
         return d
 
+
 def test_fie_conversion():
     # change these to asserst
     print (fie_to_di("0,0,0"))
@@ -27,23 +31,13 @@ def test_fie_conversion():
     print (fie_to_di("4,4,4"))
 
 
-if __name__ == '__main__':
-    # TODO: Make a function
-    lt = pd.read_csv(sys.argv[1])
-    # TODO: Use logger over prints
-    print("before munging")
-    print (lt)
-    lt = lt.drop('name',1)
-    lt = lt.drop('axis',1)
-    lt = lt.set_index('id')
-    lt = lt.applymap(fie_to_di)
-    lt = lt.transpose()
-    print("after munging")
-    print (lt)
+def generate_sections(lt):
+    '''Generate the cross sections in 3D at each station 
+    from the given lines and organizes the lines into coordinates
+    (x, y, z) = (width, height length). Returns each as a list
+    contained in a dictionary'''
 
-    # Generate the cross sections in 3-space 
-    # at each station from the given lines
-    # TODO: Make it another function
+    sections = []
     bottom = []
     chine = []
     gunwale = []
@@ -53,11 +47,45 @@ if __name__ == '__main__':
         bottom.append([r.bw,r.bh,r.st])
         gunwale.append([r.gw,r.gh,r.st])
     
-        # Add the points along with a center line to form the cross sections
-        section = [[0,r.gh,r.st], [0,r.bh,r.st], [r.bw,r.bh,r.st], [r.cw,r.ch,r.st], [r.gw,r.gh,r.st]]
-        print ('        section{0}={1};'.format(index,str(section)))
+        # Add points along each line to form the cross sections
+        s = [[0,r.gh,r.st],     # center at gunwale
+             [0,r.bh,r.st],     # center at bottom
+             [r.bw,r.bh,r.st],  # bottom
+             [r.cw,r.ch,r.st],  # chine
+             [r.gw,r.gh,r.st]]  # gunwale
+        sections.append(s)
 
-    print('        bottom={0}'.format(str(bottom)))
-    print('        chine={0}'.format(str(chine)))
-    print('        gunwale={0}'.format(str(gunwale)))
+    # Put it all in a dictionary
+    offset_data = {
+        'sections': sections,
+        'bottom': bottom,
+        'chine' : chine,
+        'gunwale' : gunwale}
+
+    return offset_data
+
+
+def load_offsets(filename):
+    logging.debug('This message should go to the log file')
+    offset_table = pd.read_csv(filename)
+
+    logging.debug('before munging\n' + str(offset_table))
+
+    offset_table = offset_table.drop('name',1)
+    offset_table = offset_table.drop('axis',1)
+    offset_table = offset_table.set_index('id')
+    offset_table = offset_table.applymap(fie_to_di)
+    offset_table = offset_table.transpose()
+
+    logging.debug('after munging\n' + str(offset_table))
+
+    return (offset_table)
+
+if __name__ == '__main__':
+
+    offset_table = load_offsets(sys.argv[1])
+
+    section_data = generate_sections(offset_table)
+    print (json.dumps(section_data, sort_keys=True))
+
 
