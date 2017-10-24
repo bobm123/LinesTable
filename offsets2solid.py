@@ -1,4 +1,14 @@
+#!/usr/bin/env python3
+'''
+Generates a set of points defining the cross sections and "lines"
+of a boat holl given a table of offsets
+'''
 
+__author__ = "Robert Marchese"
+__version__ = "0.1.0"
+__license__ = "MIT"
+
+import argparse
 import json
 import logging
 import pandas as pd
@@ -23,7 +33,7 @@ def fie_to_di(d):
 
 
 def test_fie_conversion():
-    # change these to asserst
+    # change these to asserts, put in tests
     print (fie_to_di("0,0,0"))
     print (fie_to_di("1,0,0"))
     print (fie_to_di("0,1,0"))
@@ -66,7 +76,6 @@ def generate_sections(lt):
 
 
 def load_offsets(filename):
-    logging.debug('This message should go to the log file')
     offset_table = pd.read_csv(filename)
 
     logging.debug('before munging\n' + str(offset_table))
@@ -81,11 +90,43 @@ def load_offsets(filename):
 
     return (offset_table)
 
-if __name__ == '__main__':
 
-    offset_table = load_offsets(sys.argv[1])
+def main(args):
+    offset_table = load_offsets(args.filename)
 
     section_data = generate_sections(offset_table)
     print (json.dumps(section_data, sort_keys=True))
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+
+    # Required positional argument
+    parser.add_argument("filename", help="input .csv file (offset table)")
+
+    # Optional argument flag which defaults to False
+    #parser.add_argument("-f", "--flag", action="store_true", default=False)
+
+    # Optional argument which requires a parameter (eg. -d test)
+    #parser.add_argument("-n", "--name", action="store", dest="name")
+
+    # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
+    #parser.add_argument(
+    #    "-v",
+    #    "--verbose",
+    #    action="count",
+    #    default=0,
+    #    help="Verbosity (-v, -vv, etc)")
+
+    # Specify output of "--version"
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s (version {version})".format(version=__version__))
+
+    args = parser.parse_args()
+    main(args)
+
 
 
