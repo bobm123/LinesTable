@@ -3,7 +3,7 @@
 	"type":	"script",
 	"author":	"Robert Marchese",
 	"description":	{
-		"":	"Generated a 3D moded of a boat hull from a table of offsets"
+		"":	"Generate a 3D model of a boat hull from a table of offsets"
 	},
 	"supportedOS":	"windows|mac",
 	"editEnabled":	true
