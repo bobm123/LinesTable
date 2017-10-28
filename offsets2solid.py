@@ -189,8 +189,7 @@ def rake_angle(offsets, st_index, angle):
 
     angle = radians(angle)
 
-    # Assume angle take at top of section
-    #[[0, 32.75, 0.0], (0.875, 32.75, 0.0), (0.875, 14.0, 0.0), (0.5, 14.0, 0.0), (0.5, 13.25, 0.0), [0, 13.25, 0.0]]
+    # Assume angle taken at top of section
     y0 = xc_original[0][1]
     z0 = xc_original[0][2]
 
@@ -215,7 +214,6 @@ def rake_angle(offsets, st_index, angle):
             logger.debug("ignoring " + str(name) + " at station " + str(st_index))
 
     return offsets 
-
 
 
 def main(args):
