@@ -13,7 +13,7 @@ import json
 import logging
 import pandas as pd
 import sys
-from math import isnan
+from math import isnan, radians, cos
 
 # Setup Logging
 logger = logging.getLogger('offsets')
@@ -60,29 +60,15 @@ def generate_sections(lt):
     contained in a dictionary'''
 
     sections = []
-    #bottom = []
-    #chine = []
-    #gunwale = []
     line_order = ['coaming', 'gunwale', 'sheer', 'chine', 'bottom', 'skeg']
     for index, r in lt.iterrows():
-        # Add width, height and station to each 'line' as points (x,y,z)
-        #chine.append([r.cw,r.ch,r.st])
-        #bottom.append([r.bw,r.bh,r.st])
-        #gunwale.append([r.gw,r.gh,r.st])
-    
-        # Add points along each line to form the cross sections
-        #s = [[0,r.gh,r.st],     # center at gunwale
-        #     [0,r.bh,r.st],     # center at bottom
-        #     [r.bw,r.bh,r.st],  # bottom
-        #     [r.cw,r.ch,r.st],  # chine
-        #     [r.gw,r.gh,r.st]]  # gunwale
         xc = []
         for line in line_order:
             if line in lt:
                 xc.append(r[line])
 
         # Remove any points with NaN in them
-        xc = [p for p in xc if valid_coordinate(p)]
+        xc = remove_invalid(xc)
 
         # project the first and last points onto CL
         first = [0, xc[0][1], xc[0][2]]
@@ -97,7 +83,9 @@ def generate_sections(lt):
     for line in line_order:
         if line in lt:
             line_points = list(lt[line])
-            line_points = [p for p in line_points if valid_coordinate(p)]
+            #print("before " + str(line_points))
+            line_points = remove_invalid(line_points, [])
+            #print("after " + str(line_points))
             lines_data[line] = line_points
     offset_data['lines'] = lines_data
 
@@ -129,8 +117,15 @@ def get_all_axis(df, axis):
     return (df_part.transpose())
 
 
-def valid_coordinate(point):
+def is_valid(point):
     return all(isinstance(w, float) and not isnan(w) for w in point)
+
+
+def remove_invalid(plist, replace=None):
+    if replace == None:
+        return [p for p in plist if is_valid(p)]
+    else:
+        return [p if is_valid(p) else [] for p in plist]
 
 
 def load_offsets(filename):
@@ -167,10 +162,52 @@ def load_offsets(filename):
     return (ot_combined)
 
 
+# TODO: Move this operation to F360 scripts
+def rake_angle(offsets, st_index, angle):
+    xc_original = offsets['sections'][st_index]
+    logger.debug("original section " + str(st_index) + " points\n" + str(xc_original))
+
+    angle = radians(angle)
+
+    # Assume angle take at top of section
+    #[[0, 32.75, 0.0], (0.875, 32.75, 0.0), (0.875, 14.0, 0.0), (0.5, 14.0, 0.0), (0.5, 13.25, 0.0), [0, 13.25, 0.0]]
+    y0 = xc_original[0][1]
+
+    # Apply rotation in xz plane around y = y0 to sections
+    xc_new = []
+    for pt in xc_original:
+        pt = list(pt)
+        pt[1] = y0 + (pt[1] - y0) / cos(angle)
+        xc_new.append(pt)
+    offsets['sections'][st_index] = xc_new
+
+    logger.debug("modified section " + str(st_index) + " points\n" + str(xc_new))
+
+    # Apply rotation in xz plane around y = y0 to lines
+    for name,coords in offsets['lines'].items():
+        if coords[st_index]:
+            logger.debug("modifying " + str(name) + " at station " + str(st_index))
+            pt = list(coords[st_index])
+            pt[1] = y0 + (pt[1] - y0) / cos(angle)
+            coords[st_index] = pt
+        else:
+            logger.debug("ignoring " + str(name) + " at station " + str(st_index))
+
+    return offsets 
+
+
+
 def main(args):
     offset_table = load_offsets(args.filename)
 
     offset_data = generate_sections(offset_table)
+
+    # Apply optional rake angles at bow and transom
+    # TODO: Move this operation to F360 scripts
+    bindex = 0
+    offset_data = rake_angle(offset_data, bindex, 18)
+    tindex = len(offset_data['sections']) - 1
+    offset_data = rake_angle(offset_data, tindex, -25)
 
     logger.debug('writing json data:\n' + json.dumps(offset_data))
     with open('data.json', 'w') as outfile:
