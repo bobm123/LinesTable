@@ -13,7 +13,7 @@ import json
 import logging
 import pandas as pd
 import sys
-from math import isnan, radians, cos
+from math import isnan, radians, sin, cos
 
 # Setup Logging
 logger = logging.getLogger('offsets')
@@ -162,6 +162,26 @@ def load_offsets(filename):
     return (ot_combined)
 
 
+def rotate_point(cy, cz, angle, p):
+    ''' rotate by an angle in the yz-plane '''
+    s = sin(angle)
+    c = cos(angle)
+
+    # translate point back to origin:
+    p[1] -= cy
+    p[2] -= cz
+
+    # rotate point
+    ynew = p[2] * s + p[1] * c
+    znew = p[2] * c - p[1] * s
+
+    # translate point back:
+    p[1] = ynew + cy
+    p[2] = znew + cz
+
+    return p;
+
+
 # TODO: Move this operation to F360 scripts
 def rake_angle(offsets, st_index, angle):
     xc_original = offsets['sections'][st_index]
@@ -172,12 +192,13 @@ def rake_angle(offsets, st_index, angle):
     # Assume angle take at top of section
     #[[0, 32.75, 0.0], (0.875, 32.75, 0.0), (0.875, 14.0, 0.0), (0.5, 14.0, 0.0), (0.5, 13.25, 0.0), [0, 13.25, 0.0]]
     y0 = xc_original[0][1]
+    z0 = xc_original[0][2]
 
     # Apply rotation in xz plane around y = y0 to sections
     xc_new = []
     for pt in xc_original:
         pt = list(pt)
-        pt[1] = y0 + (pt[1] - y0) / cos(angle)
+        pt = rotate_point(y0, z0, angle, pt)
         xc_new.append(pt)
     offsets['sections'][st_index] = xc_new
 
@@ -188,7 +209,7 @@ def rake_angle(offsets, st_index, angle):
         if coords[st_index]:
             logger.debug("modifying " + str(name) + " at station " + str(st_index))
             pt = list(coords[st_index])
-            pt[1] = y0 + (pt[1] - y0) / cos(angle)
+            pt = rotate_point(y0, z0, angle, pt)
             coords[st_index] = pt
         else:
             logger.debug("ignoring " + str(name) + " at station " + str(st_index))
