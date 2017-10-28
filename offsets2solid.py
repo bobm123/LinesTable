@@ -13,15 +13,27 @@ import json
 import logging
 import pandas as pd
 import sys
+from math import isnan
 
-logging.basicConfig(filename='offsets2solid.log',level=logging.DEBUG)
+# Setup Logging
+logger = logging.getLogger('offsets')
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler('offsets2solid.log')
+fh.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG) #change to ERROR or WARNING after deplot
+log_fmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(log_fmt)
+ch.setFormatter(log_fmt)
+logger.addHandler(fh)
+logger.addHandler(ch)
 
 
 def fie_to_di(d):
     '''Convets dimenstion in feet-inches-eigths to decimal inches'''
 
     if isinstance(d, str):
-        fie = d.split(',')
+        fie = d.split('-')
     else:
         return d
 
@@ -48,54 +60,121 @@ def generate_sections(lt):
     contained in a dictionary'''
 
     sections = []
-    bottom = []
-    chine = []
-    gunwale = []
+    #bottom = []
+    #chine = []
+    #gunwale = []
+    line_order = ['coaming', 'gunwale', 'sheer', 'chine', 'bottom', 'skeg']
     for index, r in lt.iterrows():
         # Add width, height and station to each 'line' as points (x,y,z)
-        chine.append([r.cw,r.ch,r.st])
-        bottom.append([r.bw,r.bh,r.st])
-        gunwale.append([r.gw,r.gh,r.st])
+        #chine.append([r.cw,r.ch,r.st])
+        #bottom.append([r.bw,r.bh,r.st])
+        #gunwale.append([r.gw,r.gh,r.st])
     
         # Add points along each line to form the cross sections
-        s = [[0,r.gh,r.st],     # center at gunwale
-             [0,r.bh,r.st],     # center at bottom
-             [r.bw,r.bh,r.st],  # bottom
-             [r.cw,r.ch,r.st],  # chine
-             [r.gw,r.gh,r.st]]  # gunwale
-        sections.append(s)
+        #s = [[0,r.gh,r.st],     # center at gunwale
+        #     [0,r.bh,r.st],     # center at bottom
+        #     [r.bw,r.bh,r.st],  # bottom
+        #     [r.cw,r.ch,r.st],  # chine
+        #     [r.gw,r.gh,r.st]]  # gunwale
+        xc = []
+        for line in line_order:
+            if line in lt:
+                xc.append(r[line])
 
-    # Put it all in a dictionary
-    offset_data = {
-        'sections': sections,
-        'bottom': bottom,
-        'chine' : chine,
-        'gunwale' : gunwale}
+        # Remove any points with NaN in them
+        xc = [p for p in xc if valid_coordinate(p)]
+
+        # project the first and last points onto CL
+        first = [0, xc[0][1], xc[0][2]]
+        last = [0, xc[-1][1], xc[-1][2]]
+        xc = [first] + xc + [last]
+
+        sections.append(xc)
+
+    # Put the sections and lines in a dictionary
+    offset_data = {'sections': sections}
+    lines_data = {}
+    for line in line_order:
+        if line in lt:
+            line_points = list(lt[line])
+            line_points = [p for p in line_points if valid_coordinate(p)]
+            lines_data[line] = line_points
+    offset_data['lines'] = lines_data
 
     return offset_data
 
 
+def repeat_value (ot, ncol):
+    '''replicates missing values from one row to the next'''
+    column_n = ot.iloc[:,ncol]
+    current = ''
+    new_column_n = []
+    for row in column_n:
+        if row and not row == current:
+            current = row
+        else:
+            row = current
+        new_column_n.append(row)
+
+    return new_column_n
+
+
+def get_all_axis(df, axis):
+    ''' get all rows with a specific axis (width, height, length)
+    and set 'name' as the index. Return the transpose '''
+    df_part = df[df['axis'].str.contains(axis)]
+    df_part = df_part.set_index('name')
+    df_part = df_part.drop('axis', 1)
+    
+    return (df_part.transpose())
+
+
+def valid_coordinate(point):
+    return all(isinstance(w, float) and not isnan(w) for w in point)
+
+
 def load_offsets(filename):
-    offset_table = pd.read_csv(filename)
+    ''' load a table of offsets and convert seperate rows into columns
+    of points (width, height, length) representing each line '''
+    ot = pd.read_csv(filename)
+    ot = ot.fillna('')
 
-    logging.debug('before munging\n' + str(offset_table))
+    logger.debug('before munging\n' + str(ot))
 
-    offset_table = offset_table.drop('name',1)
-    offset_table = offset_table.drop('axis',1)
-    offset_table = offset_table.set_index('id')
-    offset_table = offset_table.applymap(fie_to_di)
-    offset_table = offset_table.transpose()
+    # Drop any comments
+    column_0 = ot.iloc[:,0]
+    ot = ot[column_0.str.startswith('#') == False]
 
-    logging.debug('after munging\n' + str(offset_table))
+    # Repeate axis lables ('width', 'heigh')
+    ot.iloc[:,0] = repeat_value(ot, 0)
 
-    return (offset_table)
+    # Convert feet-inches-eights to decimal inches
+    ot = ot.applymap(fie_to_di)
+
+    # Break out each set of dimension and recombine as (x,y,z)
+    ot_widths = get_all_axis(ot, 'width')
+    ot_heights = get_all_axis(ot, 'height')
+    ot_lengths = get_all_axis(ot, 'length')
+    ot_combined = pd.DataFrame(index=ot_widths.index)
+    for col in ot_widths:
+        x = ot_widths[col]
+        y = ot_heights[col]
+        z = ot_lengths['station'].astype('float')
+        ot_combined[col] = list(zip(x, y, z))
+
+    logger.debug('after munging\n' + str(ot_combined))
+
+    return (ot_combined)
 
 
 def main(args):
     offset_table = load_offsets(args.filename)
 
-    section_data = generate_sections(offset_table)
-    print (json.dumps(section_data, sort_keys=True))
+    offset_data = generate_sections(offset_table)
+
+    logger.debug('writing json data:\n' + json.dumps(offset_data))
+    with open('data.json', 'w') as outfile:
+        json.dump(offset_data, outfile)
 
 
 if __name__ == '__main__':
