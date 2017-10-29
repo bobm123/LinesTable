@@ -1,0 +1,12 @@
+axis,name,stem,1,2,3,4,5,6,transom
+length,station,0,24,48,72,96,120,144,168
+heights,coaming,x,2-8-6,2-6-3,2-4-5,2-3-6,2-4-0,2-5-2,2-7-4
+,sheer,2-8-6,2-6-1,2-3-5,2-1-6,2-1-0,2-1-1,2-2-3,2-4-4
+,chine,1-2-0,1-1-0,0-11-1,0-10-0,0-10-0,1-0-2,1-4-2,1-7-2
+widths,sheer,0-0-7,1-1-3,1-11-0,2-4-2,2-5-1,2-3-2,2-0-0,1-8-4
+,chine,0-0-7,0-8-3,1-4-7,1-9-7,1-10-7,1-9-2,1-6-5,1-5-1
+,coaming,x,0-6-7,1-4-0,1-9-2,1-10-6,1-8-6,1-5-3,1-2-0
+# Notes:,,,,,,,,,
+"# Stations are 24"" apart, offsets in feet-inches-eights to outside of plank",,,,,,,,,
+"# Chine line in sheer elevation is a straight line, stem to staion 2 and for 2'-6"" afore transome.",,,,,,,,,
+"# Transom rake angle 25 deg, stem rake angle 18 deg.",,,,,,,,,
