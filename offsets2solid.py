@@ -11,6 +11,7 @@ __license__ = "MIT"
 import argparse
 import json
 import logging
+import os
 import pandas as pd
 import sys
 from math import isnan, radians, sin, cos
@@ -109,7 +110,7 @@ def repeat_value (ot, ncol):
 
 def get_all_axis(df, axis):
     ''' get all rows with a specific axis (width, height, length)
-    and set 'name' as the index. Return the transpose '''
+    and set 'name' column as the index. Return the transpose '''
     df_part = df[df['axis'].str.contains(axis)]
     df_part = df_part.set_index('name')
     df_part = df_part.drop('axis', 1)
@@ -139,6 +140,8 @@ def load_offsets(filename):
     # Drop any comments
     column_0 = ot.iloc[:,0]
     ot = ot[column_0.str.startswith('#') == False]
+
+    # TODO: Force all column and row lable text to lower case
 
     # Repeate axis lables ('width', 'heigh')
     ot.iloc[:,0] = repeat_value(ot, 0)
@@ -228,9 +231,11 @@ def main(args):
     tindex = len(offset_data['sections']) - 1
     offset_data = rake_angle(offset_data, tindex, -25)
 
+    out_filename, _ = os.path.splitext(args.filename)
+    out_filename = out_filename + '.json'
     logger.debug('writing json data:\n' + json.dumps(offset_data))
-    with open('data.json', 'w') as outfile:
-        json.dump(offset_data, outfile)
+    with open(out_filename, 'w') as opf:
+        json.dump(offset_data, opf)
 
 
 if __name__ == '__main__':
