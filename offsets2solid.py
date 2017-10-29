@@ -190,7 +190,8 @@ def rake_angle(offsets, st_index, angle):
     xc_original = offsets['sections'][st_index]
     logger.debug("original section " + str(st_index) + " points\n" + str(xc_original))
 
-    angle = radians(angle)
+    # Angle is givent in degrees from the baseline
+    angle = radians(angle - 90)
 
     # Assume angle taken at top of section
     y0 = xc_original[0][1]
@@ -227,9 +228,9 @@ def main(args):
     # Apply optional rake angles at bow and transom
     # TODO: Move this operation to F360 scripts
     bindex = 0
-    offset_data = rake_angle(offset_data, bindex, 18)
+    offset_data = rake_angle(offset_data, bindex, args.bow_angle)
     tindex = len(offset_data['sections']) - 1
-    offset_data = rake_angle(offset_data, tindex, -25)
+    offset_data = rake_angle(offset_data, tindex, args.transom_angle)
 
     out_filename, _ = os.path.splitext(args.filename)
     out_filename = out_filename + '.json'
@@ -250,6 +251,14 @@ if __name__ == '__main__':
 
     # Optional argument which requires a parameter (eg. -d test)
     #parser.add_argument("-n", "--name", action="store", dest="name")
+
+    parser.add_argument("-b", "--bow", action="store", 
+        dest="bow_angle", default=90,
+        help="Angle of the bow measured from the baseline ")
+
+    parser.add_argument("-t", "--transom", action="store", 
+        dest="transom_angle", default=90,
+        help="Angle of the transom measured from the baseline")
 
     # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
     #parser.add_argument(
