@@ -11,7 +11,10 @@ _handlers = []
 
 # Command inputs
 _errMessage = adsk.core.TextBoxCommandInput.cast(None)
-
+_numTeeth = adsk.core.StringValueCommandInput.cast(None)
+_getJsonFile = adsk.core.TextBoxCommandInput.cast(None)
+_bowAngle = adsk.core.StringValueCommandInput.cast(None)
+_transomAngle = adsk.core.StringValueCommandInput.cast(None)
 
 # Event handler that reacts to any changes the user makes to any of the command inputs.
 class IotCommandInputChangedHandler(adsk.core.InputChangedEventHandler):
@@ -71,6 +74,7 @@ class IotCommandInputChangedHandler(adsk.core.InputChangedEventHandler):
         try:
             eventArgs = adsk.core.InputChangedEventArgs.cast(args)
             changedInput = eventArgs.input
+            #if changedInput.id == 
 
             # Determine what changed from changedInput.id and act on it
             # For example
@@ -93,21 +97,46 @@ class IotCommandValidateInputsHandler(adsk.core.ValidateInputsEventHandler):
         try:
             eventArgs = adsk.core.ValidateInputsEventArgs.cast(args)
             
-            _errMessage.text = 'Add some parameters'
+            _errMessage.text = 'Add some more parameters'
             eventArgs.areInputsValid = False
 
             # Make sure user inputs are reasonable
-            #if not _numTeeth.value.isdigit():
-            #    _errMessage.text = 'The number of teeth must be a whole number.'
-            #    eventArgs.areInputsValid = False
-            #    return
-            #else:    
-            #    numTeeth = int(_numTeeth.value)
-            # 
-            #if numTeeth < 4:
-            #    _errMessage.text = 'The number of teeth must be 4 or more.'
-            #    eventArgs.areInputsValid = False
-            #    return
+            try:
+                bowAngle = float(_bowAngle.value)
+            except ValueError:
+                _errMessage.text = 'The bow angle must be a number.'
+                eventArgs.areInputsValid = False
+                return False
+
+            if bowAngle > 135 or bowAngle < 45:
+                _errMessage.text = 'The bow angle must be between 45 adn 135 deg'
+                eventArgs.areInputsValid = False
+                return
+
+            try:
+                transomAngle = float(_transomAngle.value)
+            except ValueError:
+                _errMessage.text = 'The transom angle must be a number.'
+                eventArgs.areInputsValid = False
+                return False
+
+            if transomAngle > 135 or transomAngle < 45:
+                _errMessage.text = 'The transom angle must be between 45 adn 135 deg'
+                eventArgs.areInputsValid = False
+                return
+
+            # Make sure user inputs are reasonable
+            if not _numTeeth.value.isdigit():
+                _errMessage.text = 'The number of teeth must be a whole number.'
+                eventArgs.areInputsValid = False
+                return
+            else:    
+                numTeeth = int(_numTeeth.value)
+             
+            if numTeeth < 4:
+                _errMessage.text = 'The number of teeth must be 4 or more.'
+                eventArgs.areInputsValid = False
+                return
                 
         except:
             if _ui:
@@ -124,8 +153,31 @@ class IotCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             # Get the command that was created.
             cmd = adsk.core.Command.cast(args.command)
 
+            # Verify that a Fusion design is active.
+            des = adsk.fusion.Design.cast(_app.activeProduct)
+            if not des:
+                _ui.messageBox('A Fusion design must be active when invoking this command.')
+                return()
+
+            getJsonFile = False
+
+            bowAngle = '90'
+            bowAngleAttrib = des.attributes.itemByName('ImportOffset', 'bowAngle')
+            if bowAngleAttrib:
+                bowAngle = bowAngleAttrib.value
+
+            transomAngle = '90'
+            transomAngleAttrib = des.attributes.itemByName('ImportOffset', 'transomAngle')
+            if transomAngleAttrib:
+                transomAngle = transomAngleAttrib.value
+
+            numTeeth = '24'
+            numTeethAttrib = des.attributes.itemByName('ImportOffset', 'numTeeth')
+            if numTeethAttrib:
+                numTeeth = numTeethAttrib.value
+
             # Connect to the variable the command will provide inputs for
-            global _errMessage
+            global _getJsonFile, _numTeeth, _bowAngle, _transomAngle, _errMessage
 
             # Connect to additional command created events
             onDestroy = IotCommandDestroyHandler()
@@ -154,7 +206,16 @@ class IotCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             roTextBox = inputs.addTextBoxCommandInput('readonly_textBox_1', '', 'Select a file to import', 2, True)
      
             # Add additional UI widgets here
+            # Create bool value input with button style that can be clicked.
+            _getJsonFile = inputs.addBoolValueInput('select_json_button', 'Select JSON File', False, 'resources/filebutton', True)
 
+            _bowAngle = inputs.addStringValueInput('bowAngle', 'Bow Angle', bowAngle)  
+            _transomAngle = inputs.addStringValueInput('transomAngle', 'Tramnsom Angle', transomAngle)  
+
+            # Dummy number of teeth
+            _numTeeth = inputs.addStringValueInput('numTeeth', 'Number of Teeth', numTeeth)  
+
+            # Add an error message box at bottom
             _errMessage = inputs.addTextBoxCommandInput('errMessage', '', '', 2, True)
             _errMessage.isFullWidth = True
 
