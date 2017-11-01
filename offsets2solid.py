@@ -132,7 +132,10 @@ def load_offsets(filename):
     column_0 = ot.iloc[:,0]
     ot = ot[column_0.str.startswith('#') == False]
 
-    # TODO: Force all column and row lable text to lower case
+    # Force column and row labels to lower case
+    ot.columns = map(str.lower, ot.columns)
+    ot['axis'] = ot['axis'].str.lower()
+    ot['name'] = ot['name'].str.lower()
 
     # Repeate axis lables ('width', 'heigh')
     ot.iloc[:,0] = repeat_value(ot, 0)
@@ -151,7 +154,7 @@ def load_offsets(filename):
         z = ot_lengths['station'].astype('float')
         ot_combined[col] = list(zip(x, y, z))
 
-    logger.debug('after munging\n' + str(ot_combined))
+    logger.debug('Organized in to NxM of (x,y,z)\n' + str(ot_combined))
 
     return (ot_combined)
 
