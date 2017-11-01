@@ -45,15 +45,6 @@ def fie_to_di(d):
         return d
 
 
-def test_fie_conversion():
-    # change these to asserts, put in tests
-    print (fie_to_di("0,0,0"))
-    print (fie_to_di("1,0,0"))
-    print (fie_to_di("0,1,0"))
-    print (fie_to_di("0,0,1"))
-    print (fie_to_di("4,4,4"))
-
-
 def generate_sections(lt):
     '''Generate the cross sections in 3D at each station 
     from the given lines and organizes the lines into coordinates
