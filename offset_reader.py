@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""
-Attempt to process an offsets table w/o using pandas
-for easier integration into Fusion360 API
-"""
+'''
+Generates a set of points defining the cross sections and "lines"
+of a boat hull given a table of offsets
+'''
 
-__author__ = "Your Name"
+__author__ = "Robert marchese"
 __version__ = "0.1.0"
 __license__ = "MIT"
 
@@ -31,7 +31,7 @@ logger.addHandler(ch)
 
 
 def fie_to_di(d):
-    '''Convets dimenstion in feet-inches-eigths to decimal inches'''
+    '''Convets dimenstion from feet-inches-eigths to decimal inches'''
 
     if isinstance(d, str):
         fie = d.split('-')
@@ -46,7 +46,7 @@ def fie_to_di(d):
 
 
 def get_all_axis(table, axis):
-    ''' return all rows with a specific axis (width, height, length)
+    '''return all rows with a specific axis (width, height, length)
     in a dictionary and set 'name' as the key '''
     selected = {r[1]:r[2:] for r in table if axis in r[0]}
     return selected
@@ -80,8 +80,8 @@ def generate_sections(offset_table):
     return sections
 
 
-def offset_reader(args):
-    """ parse the csv expected offset table fields """
+def parse_csv_offsets(args):
+    ''' parse the csv expected offset table fields '''
     logger.info("arguments" + str(args))
     with open(args.filename, 'r') as csvfile:
         raw_table = list(csv.reader(csvfile, delimiter=',', quotechar='"'))
@@ -95,8 +95,6 @@ def offset_reader(args):
 
     # TODO: definitly 'happy path' coding here, so need to deal with
     # unexpected table formats.
-
-    #logger.info(f'header row is\n{offset_table[0]}')
 
     # force rows to lower case
     for i,row in enumerate(offset_table):
@@ -135,16 +133,81 @@ def offset_reader(args):
     return ot_combined
 
 
-def main(args):
-    offset_table = offset_reader(args)
+def rotate_point(cy, cz, angle, p):
+    '''rotate by an angle around a point in the yz-plane'''
+    s = sin(angle)
+    c = cos(angle)
 
-    offset_table['sections'] = generate_sections(offset_table)
+    # translate point back to origin:
+    p[1] -= cy
+    p[2] -= cz
+
+    # rotate point
+    ynew = p[2] * s + p[1] * c
+    znew = p[2] * c - p[1] * s
+
+    # translate point back:
+    p[1] = ynew + cy
+    p[2] = znew + cz
+
+    return p;
+
+
+# TODO: Move this operation to F360 scripts
+def rake_angle(offsets, st_index, angle):
+    xc_original = offsets['sections'][st_index]
+    logger.debug("original section " + str(st_index) + " points\n" + str(xc_original))
+
+    # Angle is givent in degrees from the baseline
+    angle = radians(angle - 90)
+
+    # Assume angle taken at top of section
+    y0 = xc_original[0][1]
+    z0 = xc_original[0][2]
+
+    # Apply rotation in xz plane around y = y0 to sections
+    xc_new = []
+    for pt in xc_original:
+        pt = list(pt)
+        pt = rotate_point(y0, z0, angle, pt)
+        xc_new.append(pt)
+    offsets['sections'][st_index] = xc_new
+
+    logger.debug("modified section " + str(st_index) + " points\n" + str(xc_new))
+
+    # Apply rotation in xz plane around y = y0 to lines
+    for name,coords in offsets['lines'].items():
+        if coords[st_index]:
+            logger.debug("modifying " + str(name) + " at station " + str(st_index))
+            pt = list(coords[st_index])
+            pt = rotate_point(y0, z0, angle, pt)
+            coords[st_index] = pt
+        else:
+            logger.debug("ignoring " + str(name) + " at station " + str(st_index))
+
+    return offsets 
+
+
+def offset_reader(args):
+
+    # Read the lines from an offset table
+    offset_data = parse_csv_offsets(args)
+
+    # Add a set of cross sections
+    offset_data['sections'] = generate_sections(offset_data)
+
+    # Apply optional rake angles at bow and transom
+    # TODO: Move this operation to F360 scripts
+    bindex = 0
+    offset_data = rake_angle(offset_data, bindex, args.bow_angle)
+    tindex = len(offset_data['sections']) - 1
+    offset_data = rake_angle(offset_data, tindex, args.transom_angle)
 
     out_filename, _ = os.path.splitext(args.filename)
     out_filename = out_filename + '.json'
-    logger.debug('writing json data:\n' + json.dumps(offset_table))
+    logger.debug('writing json data:\n' + json.dumps(offset_data))
     with open(out_filename, 'w') as opf:
-        json.dump(offset_table, opf)
+        json.dump(offset_data, opf)
 
 
 if __name__ == "__main__":
@@ -154,20 +217,14 @@ if __name__ == "__main__":
     # Required positional argument
     parser.add_argument("filename", help="input .csv file (offset table)")
 
-    # Optional argument flag which defaults to False
-    parser.add_argument("-f", "--flag", action="store_true", default=False)
+    # Optional arguments that require a parameter
+    parser.add_argument("-b", "--bow", action="store", 
+        dest="bow_angle", default=90,
+        help="Angle of the bow measured from the baseline ")
 
-    # Optional argument which requires a parameter
-    parser.add_argument("-b", "--butt", action="store", dest="buttocks_lines", help="list of buttocks line distances from cl")
-    parser.add_argument("-w", "--water", action="store", dest="water_lines", help="list of water line distances from from base")
-
-    # Optional verbosity counter (eg. -v, -vv, -vvv, etc.)
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="count",
-        default=0,
-        help="Verbosity (-v, -vv, etc)")
+    parser.add_argument("-t", "--transom", action="store", 
+        dest="transom_angle", default=90,
+        help="Angle of the transom measured from the baseline")
 
     # Specify output of "--version"
     parser.add_argument(
@@ -176,4 +233,4 @@ if __name__ == "__main__":
         version="%(prog)s (version {version})".format(version=__version__))
 
     args = parser.parse_args()
-    main(args)
+    offset_reader(args)
