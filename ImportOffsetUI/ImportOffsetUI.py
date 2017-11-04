@@ -1,6 +1,7 @@
 #Author-Robert Marchese
 #Description-Working on the User Interface for Import Offsets script here
 import adsk.core, adsk.fusion, traceback
+import os
 
 # Globals
 _app = None
@@ -10,11 +11,13 @@ _ui  = None
 _handlers = []
 
 # Command inputs
+_roTextBox = adsk.core.TextBoxCommandInput.cast(None)
 _errMessage = adsk.core.TextBoxCommandInput.cast(None)
 _numTeeth = adsk.core.StringValueCommandInput.cast(None)
-_getJsonFile = adsk.core.TextBoxCommandInput.cast(None)
+_getOffsetFile = adsk.core.TextBoxCommandInput.cast(None)
 _bowAngle = adsk.core.StringValueCommandInput.cast(None)
 _transomAngle = adsk.core.StringValueCommandInput.cast(None)
+_offsetFilename = adsk.core.StringValueCommandInput.cast(None)
 
 # Event handler that reacts to any changes the user makes to any of the command inputs.
 class IotCommandInputChangedHandler(adsk.core.InputChangedEventHandler):
@@ -39,7 +42,7 @@ class IotCommandInputChangedHandler(adsk.core.InputChangedEventHandler):
             _ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
 
-# Event handler that reacts to when the command is destroyed. This terminates the script.            
+# Event handler that reacts to when the command is destroyed. This terminates the script.
 class IotCommandDestroyHandler(adsk.core.CommandEventHandler):
     def __init__(self):
         super().__init__()
@@ -77,12 +80,36 @@ class IotCommandInputChangedHandler(adsk.core.InputChangedEventHandler):
             #if changedInput.id == 
 
             # Determine what changed from changedInput.id and act on it
-            # For example
             #if changedInput.id == 'pressureAngle':
             #    if _pressureAngle.selectedItem.name == 'Custom':
             #        _pressureAngleCustom.isVisible = True
             #    else:
-            #        _pressureAngleCustom.isVisible = False                    
+            #        _pressureAngleCustom.isVisible = False
+
+            if changedInput.id == 'select_file_button':
+                # Set styles of file dialog.
+                fileDlg = _ui.createFileDialog()
+                fileDlg.isMultiSelectEnabled = False
+                fileDlg.title = 'Open'
+                fileDlg.filter = '*.json;*.csv'
+
+                # Show file open dialog
+                dlgResult = fileDlg.showOpen()
+                if dlgResult == adsk.core.DialogResults.DialogOK:
+                    msg = 'Using:\n'
+                    for fullpath in fileDlg.filenames:
+                        _offsetFilename.value = fullpath
+                        fn = os.path.split(fullpath)[-1]
+                        msg += '{}'.format(fn)
+
+                    #_ui.messageBox(msg)
+                    _roTextBox.text = msg
+
+            elif changedInput.id == 'offset_filename':
+                    _ui.messageBox("TODO: verify that\n{} exists".format(_offsetFilename.value))
+
+            else:
+                    _ui.messageBox("changed input for\n{}".format(changedInput.id))
 
         except:
             if _ui:
@@ -97,8 +124,8 @@ class IotCommandValidateInputsHandler(adsk.core.ValidateInputsEventHandler):
         try:
             eventArgs = adsk.core.ValidateInputsEventArgs.cast(args)
             
-            _errMessage.text = 'Add some more parameters'
-            eventArgs.areInputsValid = False
+            #_errMessage.text = 'Add some more parameters'
+            #eventArgs.areInputsValid = False
 
             # Make sure user inputs are reasonable
             try:
@@ -159,7 +186,7 @@ class IotCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 _ui.messageBox('A Fusion design must be active when invoking this command.')
                 return()
 
-            getJsonFile = False
+            getOffsetFile = False
 
             bowAngle = '90'
             bowAngleAttrib = des.attributes.itemByName('ImportOffset', 'bowAngle')
@@ -177,7 +204,7 @@ class IotCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 numTeeth = numTeethAttrib.value
 
             # Connect to the variable the command will provide inputs for
-            global _getJsonFile, _numTeeth, _bowAngle, _transomAngle, _errMessage
+            global _roTextBox, _getOffsetFile, _numTeeth, _bowAngle, _transomAngle, _errMessage, _offsetFilename
 
             # Connect to additional command created events
             onDestroy = IotCommandDestroyHandler()
@@ -203,14 +230,19 @@ class IotCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             inputs = cmd.commandInputs
 
             # Create a read only textbox input. 2nd param is a field lable
-            roTextBox = inputs.addTextBoxCommandInput('readonly_textBox_1', '', 'Select a file to import', 2, True)
-     
+            _roTextBox = inputs.addTextBoxCommandInput('readonly_textBox_1', '', 'Select a file to import', 2, True)
+            _roTextBox.isFullWidth = True
+
             # Add additional UI widgets here
             # Create bool value input with button style that can be clicked.
-            _getJsonFile = inputs.addBoolValueInput('select_json_button', 'Select JSON File', False, 'resources/filebutton', True)
+            _getOffsetFile = inputs.addBoolValueInput('select_file_button', 'Select File', False, 'resources/filebutton', True)
+
+            # Dummy filename
+            offsetFilename = ''
+            _offsetFilename = inputs.addStringValueInput('offset_filename', '', offsetFilename)
 
             _bowAngle = inputs.addStringValueInput('bowAngle', 'Bow Angle', bowAngle)  
-            _transomAngle = inputs.addStringValueInput('transomAngle', 'Tramnsom Angle', transomAngle)  
+            _transomAngle = inputs.addStringValueInput('transomAngle', 'Tramnsom Angle', transomAngle)
 
             # Dummy number of teeth
             _numTeeth = inputs.addStringValueInput('numTeeth', 'Number of Teeth', numTeeth)  
