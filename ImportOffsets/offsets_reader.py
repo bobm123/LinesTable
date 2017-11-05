@@ -193,11 +193,14 @@ def offset_reader(args):
     ''' read a table of offsets from a csv file and produce a
     dictionary containing the lines and cross sections '''
 
+    offset_data = {}
+
     # Read the lines from an offset table
-    offset_data = parse_csv_offsets(args)
+    lines = parse_csv_offsets(args)
+    offset_data['lines'] = lines
 
     # Add a set of cross sections
-    offset_data['sections'] = generate_sections(offset_data)
+    offset_data['sections'] = generate_sections(lines)
 
     # Apply optional rake angles at bow and transom
     # TODO: Move this operation to F360 scripts
