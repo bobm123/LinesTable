@@ -17,6 +17,10 @@ _ui  = None
 # Global set of event handlers to keep them referenced for the duration of the command
 _handlers = []
 
+# current set of offset data points (a dicitonary of lines and cross sections)
+_offset_data = {} # TODO: pass values in attributes
+_user_filename = '' # TODO: save in attributes
+
 # Command inputs
 _roTextBox = adsk.core.TextBoxCommandInput.cast(None)
 _errMessage = adsk.core.TextBoxCommandInput.cast(None)
@@ -24,6 +28,7 @@ _numTeeth = adsk.core.StringValueCommandInput.cast(None)
 _getOffsetFile = adsk.core.TextBoxCommandInput.cast(None)
 _bowAngle = adsk.core.StringValueCommandInput.cast(None)
 _transomAngle = adsk.core.StringValueCommandInput.cast(None)
+_scaleFactor = adsk.core.StringValueCommandInput.cast(None)
 _offsetFilename = adsk.core.StringValueCommandInput.cast(None)
 
 
@@ -72,6 +77,20 @@ class IotCommandExecuteHandler(adsk.core.CommandEventHandler):
             eventArgs = adsk.core.CommandEventArgs.cast(args)
             # Run the actual command code here
 
+            des = adsk.fusion.Design.cast(_app.activeProduct)
+
+            global _offset_data # TODO: pass values in attributes
+
+            # Open file on execute for now...
+            #if user_file:
+            #    with open(user_file, 'r') as f:
+            #        offset_data = json.load(f)
+            scale_factor = float(_scaleFactor.value)
+            if _offset_data:
+                offsets_draw.draw(des, _offset_data, scale_factor)
+            else:
+                _ui.messageBox('Load an offset table')
+
         except:
             if _ui:
                 _ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
@@ -87,6 +106,8 @@ class IotCommandInputChangedHandler(adsk.core.InputChangedEventHandler):
             changedInput = eventArgs.input
             #if changedInput.id == 
 
+            global _offset_data # TODO: pass values in attributes
+
             # Determine what changed from changedInput.id and act on it
             #if changedInput.id == 'pressureAngle':
             #    if _pressureAngle.selectedItem.name == 'Custom':
@@ -98,7 +119,13 @@ class IotCommandInputChangedHandler(adsk.core.InputChangedEventHandler):
                 filename = get_user_file()
                 if filename:
                     fn = os.path.split(filename)[-1]
-                    _roTextBox.text = 'Using:\n{}'.format(fn)
+                    if filename.endswith('.json'):
+                        # TODO: save filename in attributes
+                        _roTextBox.text = 'Using:\n{}'.format(fn)
+                        with open(filename, 'r') as f:
+                            _offset_data = json.load(f)
+                    elif filename.endswith('csv'):
+                        _ui.messageBox('CSV import not supperted, yet...')
 
             elif changedInput.id == 'offset_filename':
                     _ui.messageBox("TODO: verify that\n{} exists".format(_offsetFilename.value))
@@ -128,7 +155,7 @@ class IotCommandValidateInputsHandler(adsk.core.ValidateInputsEventHandler):
             except ValueError:
                 _errMessage.text = 'The bow angle must be a number.'
                 eventArgs.areInputsValid = False
-                return False
+                return
 
             if bowAngle > 135 or bowAngle < 45:
                 _errMessage.text = 'The bow angle must be between 45 adn 135 deg'
@@ -140,10 +167,22 @@ class IotCommandValidateInputsHandler(adsk.core.ValidateInputsEventHandler):
             except ValueError:
                 _errMessage.text = 'The transom angle must be a number.'
                 eventArgs.areInputsValid = False
-                return False
+                return
 
             if transomAngle > 135 or transomAngle < 45:
                 _errMessage.text = 'The transom angle must be between 45 adn 135 deg'
+                eventArgs.areInputsValid = False
+                return
+
+            try:
+                scaleFactor = float(_scaleFactor.value)
+            except ValueError:
+                _errMessage.text = 'The scale factor must be a number.'
+                eventArgs.areInputsValid = False
+                return
+
+            if transomAngle < 0:
+                _errMessage.text = 'scale factor must be positive'
                 eventArgs.areInputsValid = False
                 return
 
@@ -193,13 +232,19 @@ class IotCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             if transomAngleAttrib:
                 transomAngle = transomAngleAttrib.value
 
+            scaleFactor = '1.0'
+            scaleFactorAttrib = des.attributes.itemByName('ImportOffset', 'scaleFactor')
+            if transomAngleAttrib:
+                scaleFactor = scaleFactorAttrib.value
+
             numTeeth = '24'
             numTeethAttrib = des.attributes.itemByName('ImportOffset', 'numTeeth')
             if numTeethAttrib:
                 numTeeth = numTeethAttrib.value
 
             # Connect to the variable the command will provide inputs for
-            global _roTextBox, _getOffsetFile, _numTeeth, _bowAngle, _transomAngle, _errMessage, _offsetFilename
+            global _roTextBox, _getOffsetFile, _bowAngle, _transomAngle, _scaleFactor
+            global _errMessage, _offsetFilename, _numTeeth
 
             # Connect to additional command created events
             onDestroy = IotCommandDestroyHandler()
@@ -238,6 +283,7 @@ class IotCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
 
             _bowAngle = inputs.addStringValueInput('bowAngle', 'Bow Angle', bowAngle)  
             _transomAngle = inputs.addStringValueInput('transomAngle', 'Tramnsom Angle', transomAngle)
+            _scaleFactor = inputs.addStringValueInput('scaleFactor', 'Scale Factor', scaleFactor)  
 
             # Dummy number of teeth
             _numTeeth = inputs.addStringValueInput('numTeeth', 'Number of Teeth', numTeeth)  
