@@ -89,7 +89,7 @@ def parse_csv_offsets(args):
 
     logger.debug('original table:')
     for i, row in enumerate(raw_table):
-        logger.debug (f'row {i}: {row}')
+        logger.debug ('row {0}: {1}'.format(i, row))
 
     # Remove comments lines
     offset_table = [r for r in raw_table if not r[0].startswith('#')]
@@ -116,7 +116,7 @@ def parse_csv_offsets(args):
 
     logger.debug('modified table:')
     for i, row in enumerate(offset_table):
-        logger.debug (f'row {i}: {row}')
+        logger.debug ('row {0}: {1}'.format(i, row))
 
     # Break out each set of dimension and recombine as (x,y,z)
     ot_widths = get_all_axis(offset_table, 'width')
@@ -157,7 +157,7 @@ def rotate_point(cy, cz, angle, p):
 # TODO: Move this operation to F360 scripts
 def rake_angle(offsets, st_index, angle):
     xc_original = offsets['sections'][st_index]
-    logger.debug("original section " + str(st_index) + " points\n" + str(xc_original))
+    logger.debug("original section {0} points\n{1}".format(st_index, xc_original))
 
     # Angle is givent in degrees from the baseline
     angle = radians(angle - 90)
@@ -174,17 +174,17 @@ def rake_angle(offsets, st_index, angle):
         xc_new.append(pt)
     offsets['sections'][st_index] = xc_new
 
-    logger.debug("modified section " + str(st_index) + " points\n" + str(xc_new))
+    logger.debug("modified section {0} points\n{1}".format(st_index, xc_new))
 
     # Apply rotation in xz plane around y = y0 to lines
     for name,coords in offsets['lines'].items():
         if coords[st_index]:
-            logger.debug("modifying " + str(name) + " at station " + str(st_index))
+            logger.debug("modifying {0} at station {1}".format(name, st_index))
             pt = list(coords[st_index])
             pt = rotate_point(y0, z0, angle, pt)
             coords[st_index] = pt
         else:
-            logger.debug("ignoring " + str(name) + " at station " + str(st_index))
+            logger.debug("ignoring {0} at station {1}".format(name, st_index))
 
     return offsets 
 
