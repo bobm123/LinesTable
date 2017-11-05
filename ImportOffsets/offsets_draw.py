@@ -29,7 +29,7 @@ logger.addHandler(ch)
 # Setup Logging
 
 
-def add_spline(point_list, sketch, mirror = 1):
+def add_spline(sketch, point_list,  mirror = 1):
     '''Adds a spline to the current drawing given an set of points in 3-space'''
 
     # Create an object to store the points in
@@ -186,7 +186,7 @@ def rake_angle(offsets, st_index, angle):
     return offsets
 
 
-def draw(design, offset_data):
+def draw(design, offset_data, scale_factor=.1):
     ''' Draw the lines and sections represented by the offset table
     on a new component '''
     # Create a new component.
@@ -200,13 +200,13 @@ def draw(design, offset_data):
 
     # Create a spline (two of them actually) for each line
     for name,coords in offset_data['lines'].items():
-        coords = scale_coordinates(coords, .1) # mm to cm
-        add_spline(coords, sketch, 1)
-        add_spline(coords, sketch,-1)
+        coords = scale_coordinates(coords, scale_factor) # mm to cm
+        add_spline(sketch, coords, 1)
+        add_spline(sketch, coords, -1)
 
     # Create the cross sections
     for i,section in enumerate(offset_data['sections']):
-        section = scale_coordinates(section, .1) # mm to cm
+        section = scale_coordinates(section, scale_factor) # mm to cm
         #newConstPlane = add_offset_plane(newComp, sketch, section[0][2])
         #newSketch = newComp.sketches.add(newConstPlane)
         add_cross_section(sketch, section, 1)
@@ -214,7 +214,7 @@ def draw(design, offset_data):
 
     # Testing orientation of angled planes
     #for i,section in enumerate(offset_data['sections']):
-    #    section = scale_coordinates(section, .1) # mm to cm
+    #    section = scale_coordinates(section, scale_factor) # mm to cm
     #    newConstPlane = add_plane_at_an_angle(newComp, sketch, section, -25)
 
     return newComp
