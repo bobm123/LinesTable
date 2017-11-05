@@ -1,9 +1,6 @@
-#Author-Robert Marchese
-#Description-Generate a 3D model of a boat hull from a table of offsets
+
 
 import adsk.core
-import adsk.fusion
-import json
 from math import isnan, radians, sin, cos
 import  traceback
 
@@ -47,6 +44,8 @@ def add_cross_section(sketch, point_list, mirror = 1):
     new_line = lines.addByTwoPoints(p_end, p_start)
 
 
+# Geneating construction planes by various means
+#
 def add_offset_plane (comp, sketch, z):
     planes = comp.constructionPlanes
     planeInput = planes.createInput()
@@ -92,6 +91,9 @@ def add_plane_at_an_angle(comp, sketch, section, angle):
     planes.add(planeInput)
 
     return planes[-1]
+
+#
+# end Geneating construction planes by various means
 
 
 def scale_coordinates(in_list, scale):
@@ -158,86 +160,3 @@ def rake_angle(offsets, st_index, angle):
         #    logger.debug("ignoring " + str(name) + " at station " + str(st_index))
 
     return offsets 
-
-
-def draw_offsets(design, offset_data):
-    ''' Draw the lines and sections represented by the offset table
-    on a new component '''
-    # Create a new component.
-    rootComp = design.rootComponent
-    trans = adsk.core.Matrix3D.create()
-    occ = rootComp.occurrences.addNewComponent(trans)
-    newComp = occ.component
-
-    # Create a new sketch on the xy plane.
-    sketch = newComp.sketches.add(rootComp.xYConstructionPlane)
-
-    # Apply optional rake angles at bow and transom
-    bindex = 0
-    offset_data = rake_angle(offset_data, bindex, 18)
-    tindex = len(offset_data['sections']) - 1
-    offset_data = rake_angle(offset_data, tindex, -25)
-
-    # Create a spline (two of them actually) for each line
-    for name,coords in offset_data['lines'].items():
-        coords = scale_coordinates(coords, .1) # mm to cm
-        add_spline(coords, sketch, 1)
-        add_spline(coords, sketch,-1)
-
-    # Create the cross sections
-    for i,section in enumerate(offset_data['sections']):
-        section = scale_coordinates(section, .1) # mm to cm
-        #newConstPlane = add_offset_plane(newComp, sketch, section[0][2])
-        #newSketch = newComp.sketches.add(newConstPlane)
-        add_cross_section(sketch, section, 1)
-        add_cross_section(sketch, section,-1)
-
-    # Testing orientation of angled planes
-    #for i,section in enumerate(offset_data['sections']):
-    #    section = scale_coordinates(section, .1) # mm to cm
-    #    newConstPlane = add_plane_at_an_angle(newComp, sketch, section, -25)
-
-    return newComp
-
-
-def get_user_file(ui):
-    '''User select offset file to open'''
-
-    # Set up the file dialog.
-    msg = ''
-    fileDlg = ui.createFileDialog()
-    fileDlg.isMultiSelectEnabled = False
-    fileDlg.title = 'Open'
-    fileDlg.filter = '*.json'
-    dlgResult = fileDlg.showOpen()
-    if dlgResult == adsk.core.DialogResults.DialogOK:
-        user_file = fileDlg.filenames[0]
-        return user_file
-    else:
-        return None
-
-
-def run(context):
-    ui = None
-    try:
-        app = adsk.core.Application.get()
-        ui  = app.userInterface
-
-        design = app.activeProduct
-        if not design:
-            ui.messageBox('No active Fusion 360 design', 'No Design')
-            return
-
-        user_file = get_user_file(ui);
-        if user_file:
-            with open(user_file, 'r') as f:
-                offset_data = json.load(f)
-        else:
-            return
-
-        #TODO: Verify input file
-        draw_offsets(design, offset_data)
-
-    except:
-        if ui:
-            ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))

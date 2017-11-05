@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 '''
-Generates a set of points defining the cross sections and "lines"
-of a boat hull given a table of offsets
+Generates a set of points defining the "lines" and sections
+of a boat hull given a table of offsets.
 '''
 
 __author__ = "Robert marchese"
@@ -49,6 +49,7 @@ def get_all_axis(table, axis):
     '''return all rows with a specific axis (width, height, length)
     in a dictionary and set 'name' as the key '''
     selected = {r[1]:r[2:] for r in table if axis in r[0]}
+
     return selected
 
 
