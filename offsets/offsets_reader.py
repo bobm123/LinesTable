@@ -4,7 +4,7 @@ Generates a set of points defining the "lines" and sections
 of a boat hull given a table of offsets.
 '''
 
-__author__ = "Robert marchese"
+__author__ = "Robert Marchese"
 __version__ = "0.1.0"
 __license__ = "MIT"
 

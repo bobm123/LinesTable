@@ -1,8 +1,33 @@
+#!/usr/bin/env python3
+'''
+Functions used to create objects using the Fusion 360 adsk.core API
+'''
+
+__author__ = "Robert Marchese"
+__version__ = "0.1.0"
+__license__ = "MIT"
 
 
 import adsk.core
 from math import isnan, radians, sin, cos
+import logging
 import  traceback
+
+
+# Setup Logging
+logger = logging.getLogger('offsets draw')
+logger.setLevel(logging.DEBUG)
+fh = logging.FileHandler('offsets_draw.log')
+fh.setLevel(logging.DEBUG)
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG) #change to ERROR or WARNING after deplot
+log_fmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+log_short_fmt = logging.Formatter('%(levelname)s - %(message)s')
+fh.setFormatter(log_fmt)
+ch.setFormatter(log_short_fmt)
+logger.addHandler(fh)
+logger.addHandler(ch)
+# Setup Logging
 
 
 def add_spline(point_list, sketch, mirror = 1):
@@ -130,7 +155,7 @@ def rake_angle(offsets, st_index, angle):
     ''' Apply a rake angle at the give section (usually bow or transom)'''
 
     xc_original = offsets['sections'][st_index]
-    #logger.debug("original section " + str(st_index) + " points\n" + str(xc_original))
+    logger.debug("original section " + str(st_index) + " points\n" + str(xc_original))
 
     # Angle is given in degrees from the baseline
     angle = radians(angle)
@@ -147,16 +172,16 @@ def rake_angle(offsets, st_index, angle):
         xc_new.append(pt)
     offsets['sections'][st_index] = xc_new
 
-    #logger.debug("modified section " + str(st_index) + " points\n" + str(xc_new))
+    logger.debug("modified section " + str(st_index) + " points\n" + str(xc_new))
 
     # Apply rotation in xz plane around y = y0 to lines
     for name,coords in offsets['lines'].items():
         if coords[st_index]:
-            #logger.debug("modifying " + str(name) + " at station " + str(st_index))
+            logger.debug("modifying " + str(name) + " at station " + str(st_index))
             pt = list(coords[st_index])
             pt = rotate_point(y0, z0, angle, pt)
             coords[st_index] = pt
-        #else:
-        #    logger.debug("ignoring " + str(name) + " at station " + str(st_index))
+        else:
+            logger.debug("ignoring " + str(name) + " at station " + str(st_index))
 
     return offsets 
