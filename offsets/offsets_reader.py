@@ -15,9 +15,9 @@ import logging
 import os
 
 # Setup Logging
-logger = logging.getLogger('csv test')
+logger = logging.getLogger('offsets reader')
 logger.setLevel(logging.DEBUG)
-fh = logging.FileHandler('test_csv_open.log')
+fh = logging.FileHandler('offsets_reader.log')
 fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG) #change to ERROR or WARNING after deplot
@@ -83,13 +83,13 @@ def generate_sections(offset_table):
 
 def parse_csv_offsets(args):
     ''' parse the csv expected offset table fields '''
-    logger.info("arguments" + str(args))
+    logger.debug("arguments" + str(args))
     with open(args.filename, 'r') as csvfile:
         raw_table = list(csv.reader(csvfile, delimiter=',', quotechar='"'))
 
-    logger.info('original table:')
+    logger.debug('original table:')
     for i, row in enumerate(raw_table):
-        logger.info (f'row {i}: {row}')
+        logger.debug (f'row {i}: {row}')
 
     # Remove comments lines
     offset_table = [r for r in raw_table if not r[0].startswith('#')]
@@ -114,9 +114,9 @@ def parse_csv_offsets(args):
     for i,row in enumerate(offset_table):
         offset_table[i] = [fie_to_di(x) for x in row]
 
-    logger.info('modified table:')
+    logger.debug('modified table:')
     for i, row in enumerate(offset_table):
-        logger.info (f'row {i}: {row}')
+        logger.debug (f'row {i}: {row}')
 
     # Break out each set of dimension and recombine as (x,y,z)
     ot_widths = get_all_axis(offset_table, 'width')
@@ -190,6 +190,8 @@ def rake_angle(offsets, st_index, angle):
 
 
 def offset_reader(args):
+    ''' read a table of offsets from a csv file and produce a
+    dictionary containing the lines and cross sections '''
 
     # Read the lines from an offset table
     offset_data = parse_csv_offsets(args)
@@ -199,20 +201,16 @@ def offset_reader(args):
 
     # Apply optional rake angles at bow and transom
     # TODO: Move this operation to F360 scripts
-    bindex = 0
-    offset_data = rake_angle(offset_data, bindex, args.bow_angle)
-    tindex = len(offset_data['sections']) - 1
-    offset_data = rake_angle(offset_data, tindex, args.transom_angle)
+    #bindex = 0
+    #offset_data = rake_angle(offset_data, bindex, args.bow_angle)
+    #tindex = len(offset_data['sections']) - 1
+    #offset_data = rake_angle(offset_data, tindex, args.transom_angle)
 
-    out_filename, _ = os.path.splitext(args.filename)
-    out_filename = out_filename + '.json'
-    logger.debug('writing json data:\n' + json.dumps(offset_data))
-    with open(out_filename, 'w') as opf:
-        json.dump(offset_data, opf)
+    return offset_data
 
 
 if __name__ == "__main__":
-    """ This is executed when run from the command line """
+    ''' This is executed when run from the command line '''
     parser = argparse.ArgumentParser()
 
     # Required positional argument
@@ -220,11 +218,11 @@ if __name__ == "__main__":
 
     # Optional arguments that require a parameter
     parser.add_argument("-b", "--bow", action="store", 
-        dest="bow_angle", default=90,
+        dest="bow_angle", default=0,
         help="Angle of the bow measured from the baseline ")
 
     parser.add_argument("-t", "--transom", action="store", 
-        dest="transom_angle", default=90,
+        dest="transom_angle", default=0,
         help="Angle of the transom measured from the baseline")
 
     # Specify output of "--version"
@@ -234,4 +232,10 @@ if __name__ == "__main__":
         version="%(prog)s (version {version})".format(version=__version__))
 
     args = parser.parse_args()
-    offset_reader(args)
+    offset_data = offset_reader(args)
+
+    out_filename, _ = os.path.splitext(args.filename)
+    out_filename = out_filename + '.json'
+    logger.debug('writing json data:\n' + json.dumps(offset_data))
+    with open(out_filename, 'w') as opf:
+        json.dump(offset_data, opf)
