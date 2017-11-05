@@ -184,4 +184,44 @@ def rake_angle(offsets, st_index, angle):
         else:
             logger.debug("ignoring " + str(name) + " at station " + str(st_index))
 
-    return offsets 
+    return offsets
+
+
+def draw(design, offset_data):
+    ''' Draw the lines and sections represented by the offset table
+    on a new component '''
+    # Create a new component.
+    rootComp = design.rootComponent
+    trans = adsk.core.Matrix3D.create()
+    occ = rootComp.occurrences.addNewComponent(trans)
+    newComp = occ.component
+
+    # Create a new sketch on the xy plane.
+    sketch = newComp.sketches.add(rootComp.xYConstructionPlane)
+
+    # Apply optional rake angles at bow and transom
+    bindex = 0
+    offset_data = rake_angle(offset_data, bindex, 18)
+    tindex = len(offset_data['sections']) - 1
+    offset_data = rake_angle(offset_data, tindex, -25)
+
+    # Create a spline (two of them actually) for each line
+    for name,coords in offset_data['lines'].items():
+        coords = scale_coordinates(coords, .1) # mm to cm
+        add_spline(coords, sketch, 1)
+        add_spline(coords, sketch,-1)
+
+    # Create the cross sections
+    for i,section in enumerate(offset_data['sections']):
+        section = scale_coordinates(section, .1) # mm to cm
+        #newConstPlane = add_offset_plane(newComp, sketch, section[0][2])
+        #newSketch = newComp.sketches.add(newConstPlane)
+        add_cross_section(sketch, section, 1)
+        add_cross_section(sketch, section,-1)
+
+    # Testing orientation of angled planes
+    #for i,section in enumerate(offset_data['sections']):
+    #    section = scale_coordinates(section, .1) # mm to cm
+    #    newConstPlane = add_plane_at_an_angle(newComp, sketch, section, -25)
+
+    return newComp
