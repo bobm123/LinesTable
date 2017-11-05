@@ -6,6 +6,7 @@ import adsk.fusion
 import json
 #from math import isnan, radians, sin, cos
 from . import offsets_draw
+from . import offsets_reader
 import  traceback
 
 
