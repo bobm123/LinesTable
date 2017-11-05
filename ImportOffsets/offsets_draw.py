@@ -9,7 +9,6 @@ __license__ = "MIT"
 
 
 import adsk.core
-from math import isnan, radians, sin, cos
 import logging
 import  traceback
 
@@ -198,12 +197,6 @@ def draw(design, offset_data):
 
     # Create a new sketch on the xy plane.
     sketch = newComp.sketches.add(rootComp.xYConstructionPlane)
-
-    # Apply optional rake angles at bow and transom
-    bindex = 0
-    offset_data = rake_angle(offset_data, bindex, 18)
-    tindex = len(offset_data['sections']) - 1
-    offset_data = rake_angle(offset_data, tindex, -25)
 
     # Create a spline (two of them actually) for each line
     for name,coords in offset_data['lines'].items():

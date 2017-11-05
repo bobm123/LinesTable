@@ -12,6 +12,7 @@ import argparse
 import csv
 import json
 import logging
+from math import isnan, radians, sin, cos
 import os
 
 # Setup Logging
@@ -154,7 +155,6 @@ def rotate_point(cy, cz, angle, p):
     return p;
 
 
-# TODO: Move this operation to F360 scripts
 def rake_angle(offsets, st_index, angle):
     xc_original = offsets['sections'][st_index]
     logger.debug("original section {0} points\n{1}".format(st_index, xc_original))
@@ -203,11 +203,10 @@ def offset_reader(args):
     offset_data['sections'] = generate_sections(lines)
 
     # Apply optional rake angles at bow and transom
-    # TODO: Move this operation to F360 scripts
-    #bindex = 0
-    #offset_data = rake_angle(offset_data, bindex, args.bow_angle)
-    #tindex = len(offset_data['sections']) - 1
-    #offset_data = rake_angle(offset_data, tindex, args.transom_angle)
+    bindex = 0
+    offset_data = rake_angle(offset_data, bindex, args.bow_angle)
+    tindex = len(offset_data['sections']) - 1
+    offset_data = rake_angle(offset_data, tindex, args.transom_angle)
 
     return offset_data
 
