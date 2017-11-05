@@ -87,23 +87,10 @@ class IotCommandInputChangedHandler(adsk.core.InputChangedEventHandler):
             #        _pressureAngleCustom.isVisible = False
 
             if changedInput.id == 'select_file_button':
-                # Set styles of file dialog.
-                fileDlg = _ui.createFileDialog()
-                fileDlg.isMultiSelectEnabled = False
-                fileDlg.title = 'Open'
-                fileDlg.filter = '*.json;*.csv'
-
-                # Show file open dialog
-                dlgResult = fileDlg.showOpen()
-                if dlgResult == adsk.core.DialogResults.DialogOK:
-                    msg = 'Using:\n'
-                    for fullpath in fileDlg.filenames:
-                        _offsetFilename.value = fullpath
-                        fn = os.path.split(fullpath)[-1]
-                        msg += '{}'.format(fn)
-
-                    #_ui.messageBox(msg)
-                    _roTextBox.text = msg
+                filename = get_user_file()
+                if filename:
+                    fn = os.path.split(filename)[-1]
+                    _roTextBox.text = 'Using:\n{}'.format(fn)
 
             elif changedInput.id == 'offset_filename':
                     _ui.messageBox("TODO: verify that\n{} exists".format(_offsetFilename.value))
@@ -255,8 +242,24 @@ class IotCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             _ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
 
 
+def get_user_file():
+    '''User select offset file to open'''
+
+    # Set up the file dialog.
+    fileDlg = _ui.createFileDialog()
+    fileDlg.isMultiSelectEnabled = False
+    fileDlg.title = 'Open'
+    fileDlg.filter = '*.json;*.csv'
+    dlgResult = fileDlg.showOpen()
+
+    if dlgResult == adsk.core.DialogResults.DialogOK:
+        user_file = fileDlg.filenames[0]
+        return user_file
+    else:
+        return None
+
+
 def run(context):
-    ui = None
     try:
         global _app, _ui
         _app = adsk.core.Application.get()
