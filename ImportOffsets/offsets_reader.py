@@ -55,7 +55,10 @@ def get_all_axis(table, axis):
 
 
 def is_valid(point):
-    return all(isinstance(w, float) for w in point)
+    if point:
+        return all(isinstance(w, float) for w in point)
+    else:
+        return False
 
 
 def remove_invalid(plist, replace=None):
@@ -79,13 +82,18 @@ def generate_sections(offset_table):
             sections.append(offset_table[line_name])
 
     sections = list(map(list, zip(*sections)))
-    return sections
+
+    clean_section = []
+    for s in sections:
+        clean_section.append(remove_invalid(s))
+
+    return clean_section
 
 
-def parse_csv_offsets(args):
+def parse_csv_offsets(filename):
     ''' parse the csv expected offset table fields '''
-    logger.debug("arguments" + str(args))
-    with open(args.filename, 'r') as csvfile:
+
+    with open(filename, 'r') as csvfile:
         raw_table = list(csv.reader(csvfile, delimiter=',', quotechar='"'))
 
     logger.debug('original table:')
@@ -189,24 +197,18 @@ def rake_angle(offsets, st_index, angle):
     return offsets 
 
 
-def offset_reader(args):
+def offset_reader(filename):
     ''' read a table of offsets from a csv file and produce a
     dictionary containing the lines and cross sections '''
 
     offset_data = {}
 
     # Read the lines from an offset table
-    lines = parse_csv_offsets(args)
+    lines = parse_csv_offsets(filename)
     offset_data['lines'] = lines
 
     # Add a set of cross sections
     offset_data['sections'] = generate_sections(lines)
-
-    # Apply optional rake angles at bow and transom
-    bindex = 0
-    offset_data = rake_angle(offset_data, bindex, args.bow_angle)
-    tindex = len(offset_data['sections']) - 1
-    offset_data = rake_angle(offset_data, tindex, args.transom_angle)
 
     return offset_data
 
@@ -234,7 +236,15 @@ if __name__ == "__main__":
         version="%(prog)s (version {version})".format(version=__version__))
 
     args = parser.parse_args()
-    offset_data = offset_reader(args)
+    logger.debug("arguments" + str(args))
+
+    offset_data = offset_reader(args.filename)
+
+    # Apply optional rake angles at bow and transom
+    bindex = 0
+    offset_data = rake_angle(offset_data, bindex, 90 - args.bow_angle)
+    tindex = len(offset_data['sections']) - 1
+    offset_data = rake_angle(offset_data, tindex, 90 - args.transom_angle)
 
     out_filename, _ = os.path.splitext(args.filename)
     out_filename = out_filename + '.json'
