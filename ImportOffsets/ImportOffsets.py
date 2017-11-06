@@ -74,6 +74,7 @@ class IotCommandExecuteHandler(adsk.core.CommandEventHandler):
     def notify(self, args):
         try:
             eventArgs = adsk.core.CommandEventArgs.cast(args)
+            unitsMgr = _app.activeProduct.unitsManager
 
             global _offset_data, _user_filename
 
@@ -82,7 +83,14 @@ class IotCommandExecuteHandler(adsk.core.CommandEventHandler):
             attribs = des.attributes
             attribs.add('ImportOffset', 'filename', str(_user_filename))
 
-            # Open file on execute for now...
+            bindex = 0
+            bowAngle = math.degrees(unitsMgr.evaluateExpression(_bowAngle.expression, "deg"))
+            _offset_data = offsets_reader.rake_angle(_offset_data, bindex, 90 - bowAngle)
+
+            tindex = len(_offset_data['sections']) - 1
+            transomAngle = math.degrees(unitsMgr.evaluateExpression(_transomAngle.expression, "deg"))
+            _offset_data = offsets_reader.rake_angle(_offset_data, tindex, 90 - transomAngle)
+
             scale_factor = float(_scaleFactor.value)
             if _offset_data:
                 offsets_draw.draw(des, _offset_data, scale_factor)
@@ -187,7 +195,7 @@ class IotCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             if transomAngleAttrib:
                 initialTransomAngle = transomAngleAttrib.value
 
-            scaleFactor = '1.0'
+            scaleFactor = '0.1'
             scaleFactorAttrib = des.attributes.itemByName('ImportOffset', 'scaleFactor')
             if scaleFactorAttrib:
                 scaleFactor = scaleFactorAttrib.value

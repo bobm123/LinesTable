@@ -168,7 +168,7 @@ def rake_angle(offsets, st_index, angle):
     logger.debug("original section {0} points\n{1}".format(st_index, xc_original))
 
     # Angle is givent in degrees from the baseline
-    angle = radians(angle - 90)
+    angle = radians(angle)
 
     # Assume angle taken at top of section
     y0 = xc_original[0][1]
@@ -222,11 +222,11 @@ if __name__ == "__main__":
 
     # Optional arguments that require a parameter
     parser.add_argument("-b", "--bow", action="store", 
-        dest="bow_angle", default=0,
+        dest="bow_angle", default=90,
         help="Angle of the bow measured from the baseline ")
 
     parser.add_argument("-t", "--transom", action="store", 
-        dest="transom_angle", default=0,
+        dest="transom_angle", default=90,
         help="Angle of the transom measured from the baseline")
 
     # Specify output of "--version"
@@ -242,9 +242,9 @@ if __name__ == "__main__":
 
     # Apply optional rake angles at bow and transom
     bindex = 0
-    offset_data = rake_angle(offset_data, bindex, 90 - args.bow_angle)
+    offset_data = rake_angle(offset_data, bindex, 90 - float(args.bow_angle))
     tindex = len(offset_data['sections']) - 1
-    offset_data = rake_angle(offset_data, tindex, 90 - args.transom_angle)
+    offset_data = rake_angle(offset_data, tindex, 90 - float(args.transom_angle))
 
     out_filename, _ = os.path.splitext(args.filename)
     out_filename = out_filename + '.json'
