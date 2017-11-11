@@ -75,19 +75,40 @@ def generate_sections(offset_table):
     contained in a dictionary'''
 
     # Have a dictionary with line names for keys, list of points for values
-    line_order = ['coaming', 'gunwale', 'sheer', 'chine', 'bottom', 'skeg']
+    line_order = ['_upper_cl', 'coaming', 'gunwale', 'sheer', 'chine', 'bottom', 'skeg', '_lower_cl']
     sections = []
     for line_name in line_order:
         if line_name in offset_table:
             sections.append(offset_table[line_name])
 
+    logger.debug('Un-transformed sections')
+    logger.debug(sections)
+
+    # Transpose the list of section
     sections = list(map(list, zip(*sections)))
 
-    clean_section = []
+    clean_sections = []
+    upper = []
+    lower = []
     for s in sections:
-        clean_section.append(remove_invalid(s))
+        cs = remove_invalid(s)
+        clean_sections.append(cs)
+        css = sorted(cs, key=lambda x: x[1])
+        upper.append(css[0])
+        lower.append(css[-1])
 
-    return clean_section
+    upper = [(0.0, p[1], p[2]) for p in upper]
+    lower = [(0.0, p[1], p[2]) for p in lower]
+
+    logger.debug('Transformed clean_section')
+    for s in clean_sections:
+        logger.debug(s)
+
+    logger.debug('upper and lower lines')
+    logger.debug(upper)
+    logger.debug(lower)
+    
+    return clean_sections, upper, lower
 
 
 def parse_csv_offsets(filename):
@@ -208,7 +229,9 @@ def offset_reader(filename):
     offset_data['lines'] = lines
 
     # Add a set of cross sections
-    offset_data['sections'] = generate_sections(lines)
+    offset_data['sections'], upper, lower = generate_sections(lines)
+    offset_data['lines']['_upper_cl'] = upper
+    offset_data['lines']['_lower_cl'] = lower
 
     return offset_data
 
