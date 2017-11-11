@@ -29,38 +29,40 @@ logger.addHandler(ch)
 # Setup Logging
 
 
-def add_spline(sketch, point_list,  mirror = 1):
+def add_spline(sketch, point_list, mirror = 1):
     '''Adds a spline to the current drawing given an set of points in 3-space'''
+
+    points3d = {}
 
     # Create an object to store the points in
     points = adsk.core.ObjectCollection.create()
     for p in point_list:
         if p:
-            points.add(adsk.core.Point3D.create(mirror*p[0], p[1], p[2]))
+            pt = (mirror*p[0], p[1], p[2])
+            pt3d = adsk.core.Point3D.create(*pt)
+            points.add(pt3d)
+            points3d[pt] = pt3d
 
     # Create the spline.
     sketch.sketchCurves.sketchFittedSplines.add(points)
 
-    return points
+    return points3d
 
 
-def add_cross_section(sketch, point_list, mirror = 1):
+def add_cross_section(sketch, points3d, point_list, mirror = 1):
     '''Adds a polygon for a list of cross section verticies'''
 
     # TODO: generalize drawing a polygon from list of 2D points
     lines = sketch.sketchCurves.sketchLines;
 
     # project the first point on the center line at start there
-    #p_start = adsk.core.Point3D.create(0, point_list[0][1], 0)
     p_start = adsk.core.Point3D.create(0, point_list[0][1], point_list[0][2])
     p0 = p_start
     for p in point_list:
-        #new_line = lines.addByTwoPoints(p0, adsk.core.Point3D.create(p[0], p[1], 0))
         new_line = lines.addByTwoPoints(p0, adsk.core.Point3D.create(mirror*p[0], p[1], p[2]))
         p0 = new_line.endSketchPoint
 
     # End at last point projected to center line
-    #p_end = adsk.core.Point3D.create(0, point_list[-1][1], 0)
     p_end = adsk.core.Point3D.create(0, point_list[-1][1], point_list[-1][2])
     new_line = lines.addByTwoPoints(p0, p_end)
 
@@ -186,7 +188,7 @@ def rake_angle(offsets, st_index, angle):
     return offsets
 
 
-def draw(design, offset_data, scale_factor=.1):
+def draw(design, offset_data, scale_factor=.1, half_hull = True):
     ''' Draw the lines and sections represented by the offset table
     on a new component '''
     # Create a new component.
@@ -199,22 +201,18 @@ def draw(design, offset_data, scale_factor=.1):
     sketch = newComp.sketches.add(rootComp.xYConstructionPlane)
 
     # Create a spline (two of them actually) for each line
+    point_dict = {}
     for name,coords in offset_data['lines'].items():
         coords = scale_coordinates(coords, scale_factor) # mm to cm
-        add_spline(sketch, coords, 1)
-        add_spline(sketch, coords, -1)
+        point_dict.update(add_spline(sketch, coords, 1))
+        if not half_hull:
+            point_dict.update(add_spline(sketch, coords, -1))
 
     # Create the cross sections
-    for i,section in enumerate(offset_data['sections']):
+    for section in offset_data['sections']:
         section = scale_coordinates(section, scale_factor) # mm to cm
-        #newConstPlane = add_offset_plane(newComp, sketch, section[0][2])
-        #newSketch = newComp.sketches.add(newConstPlane)
-        add_cross_section(sketch, section, 1)
-        add_cross_section(sketch, section,-1)
-
-    # Testing orientation of angled planes
-    #for i,section in enumerate(offset_data['sections']):
-    #    section = scale_coordinates(section, scale_factor) # mm to cm
-    #    newConstPlane = add_plane_at_an_angle(newComp, sketch, section, -25)
+        add_cross_section(sketch, point_dict, section, 1)
+        if not half_hull:
+            add_cross_section(sketch, point_dict, section,-1)
 
     return newComp
