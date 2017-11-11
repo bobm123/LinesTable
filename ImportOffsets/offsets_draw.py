@@ -70,58 +70,6 @@ def add_cross_section(sketch, points3d, point_list, mirror = 1):
     new_line = lines.addByTwoPoints(p_end, p_start)
 
 
-# Geneating construction planes by various means
-#
-def add_offset_plane (comp, sketch, z):
-    planes = comp.constructionPlanes
-    planeInput = planes.createInput()
-    offsetValue = adsk.core.ValueInput.createByReal(z)
-    planeInput.setByOffset(comp.xYConstructionPlane, offsetValue)
-    planes.add(planeInput)
-
-    return planes[-1]
-
-
-def add_plane_by_points(comp, sketch, p0, p1, p2):
- 
-    # TODO: ensure 3 points exist and not collinear
-    # TODO: somehow use existing points
-    sketchPoints = sketch.sketchPoints
-    position = adsk.core.Point3D.create(*p0)
-    sk_pt0 = sketchPoints.add(position)
-    position = adsk.core.Point3D.create(*p2)
-    sk_pt1 = sketchPoints.add(position)
-    position = adsk.core.Point3D.create(*p1)
-    sk_pt2 = sketchPoints.add(position)
-
-    planes = comp.constructionPlanes
-    planeInput = planes.createInput()
-    planeInput.setByThreePoints(sk_pt0, sk_pt1, sk_pt2)
-    planes.add(planeInput)
-
-    return planes[-1]
-
-
-def add_plane_at_an_angle(comp, sketch, section, angle):
-
-    lines = sketch.sketchCurves.sketchLines;
-    p0 = adsk.core.Point3D.create(*section[0])
-    p1 = adsk.core.Point3D.create(*section[1])
-    sectionLine = lines.addByTwoPoints(p0, p1)
-    angle = adsk.core.ValueInput.createByReal(angle)
-    sketchPlane = sketch.referencePlane
-
-    planes = comp.constructionPlanes
-    planeInput = planes.createInput()
-    planeInput.setByAngle(sectionLine, angle, sketchPlane)
-    planes.add(planeInput)
-
-    return planes[-1]
-
-#
-# end Geneating construction planes by various means
-
-
 def scale_coordinates(in_list, scale):
     ''' Apply a scale factor to all the values in a list '''
 
