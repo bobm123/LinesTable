@@ -28,6 +28,7 @@ _getOffsetFile = adsk.core.TextBoxCommandInput.cast(None)
 _bowAngle = adsk.core.ValueCommandInput.cast(None)
 _transomAngle = adsk.core.ValueCommandInput.cast(None)
 _scaleFactor = adsk.core.ValueCommandInput.cast(None)
+_halfHull = adsk.core.DropDownCommandInput.cast(None)
 _errMessage = adsk.core.TextBoxCommandInput.cast(None)
 
 
@@ -91,9 +92,14 @@ class IotCommandExecuteHandler(adsk.core.CommandEventHandler):
             transomAngle = math.degrees(unitsMgr.evaluateExpression(_transomAngle.expression, "deg"))
             _offset_data = offsets_reader.rake_angle(_offset_data, tindex, 90 - transomAngle)
 
+            if _halfHull.selectedItem.name == 'Full':
+                half_hull = False
+            else:
+                half_hull = True
+
             scale_factor = float(_scaleFactor.value)
             if _offset_data:
-                offsets_draw.draw(des, _offset_data, scale_factor)
+                offsets_draw.draw(des, _offset_data, scale_factor, half_hull)
             else:
                 _ui.messageBox('Load an offset table')
 
@@ -201,7 +207,8 @@ class IotCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
                 scaleFactor = scaleFactorAttrib.value
 
             # Connect to the variable the command will provide inputs for
-            global _roTextBox, _getOffsetFile, _bowAngle, _transomAngle, _scaleFactor, _errMessage
+            global _roTextBox, _getOffsetFile, _bowAngle, _transomAngle
+            global _scaleFactor, _halfHull, _errMessage
 
             # Connect to additional command created events
             onDestroy = IotCommandDestroyHandler()
@@ -241,6 +248,12 @@ class IotCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             _transomAngle = inputs.addValueInput('transomAngle', 'Transom Angle', 'deg', transomAngle)
 
             _scaleFactor = inputs.addValueInput('scaleFactor', 'Scale Factor', '', adsk.core.ValueInput.createByReal(float(scaleFactor)))
+
+            # Create dropdown input with radio style.
+            _halfHull = inputs.addDropDownCommandInput('Generate Hull', 'Generate Hull', adsk.core.DropDownStyles.LabeledIconDropDownStyle);
+            halfHullItems = _halfHull.listItems
+            halfHullItems.add('Half', True, '')
+            halfHullItems.add('Full', False, '')
 
             # Add an error message box at bottom
             _errMessage = inputs.addTextBoxCommandInput('errMessage', '', '', 2, True)
