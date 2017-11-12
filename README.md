@@ -22,5 +22,7 @@ Here is the the corresponding .csv file for the figure above.
 
 When imported in to Fusion 360, will results in a wireframe drawing
 
-<fig 2>
+![Chesapeak Bay Sharpie wireframe][sharpie]
+
+[sharpie]: https://github.com/bobm123/LinesTable/blob/master/images/sharpie-f360-screenshop.png
 
