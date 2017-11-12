@@ -4,9 +4,13 @@ A tool to generate a 3D body (hull) given a table of points in the form of a tra
 
 Input intended to be a CSV file containing the offset data. To make problem a little easier to handle, the tool is fairly opinionated about the table's format. This shouldn't too much of a restrictions as these tables follow a fairly constant pattern. Some human intervention will inevitably be needed, but where necessary should be easily done with spreadsheet editing tools.
 
-<fig 1>
+Here is an example of a fairly typical table of offsets. This one was take from an article on the Chesepeak Bay Sharpie found here
 
-Here is an example of a fairly typical table of offsets. One thing that stands out is that the values are given in units of "fee-inch-eights" or eights of an inch. So an entry of "1-7-4" would be equal to 1 foot, 7 and 4/8 inches for a total of 19.5 inches. This is the first source of confusion the tool will help you deal with; measurements in this format will be converted to decimal inches.
+![Chesapeak Bay Sharpie Spreadsheet][sharpie_offsets_original]
+
+[sharpie_offsets_original]: https://github.com/bobm123/LinesTable/blob/master/images/ChesapeakBaySharpie.png
+
+One thing that stands out is that the values are given in units of "fee-inch-eights" or eights of an inch. So an entry of "1-7-4" would be equal to 1 foot, 7 and 4/8 inches for a total of 19.5 inches. This is the first source of confusion the tool will help you deal with; measurements in this format will be converted to decimal inches.
 
 The next is the heights and widths rows. These are usually given once per section with "dittos" for the rest. The import too will expand column 1 so each row is associated with a height or width measurements. The widths and heights will become the x and y-axis position when the points are imported.
 
@@ -16,9 +20,11 @@ Widths are another somewhat quaint aspect of these tables. Ship designers normal
 
 The stations are the positions alone the length of the ship where the measurements are taken. These will become the z-axis. These measurements are usually evenly spaced, so may appear as a note one the drawing. The should be entered in the table by hand if necessary. Other information can be added to the table as a comments row with a leading # in the first column. 
 
-Here is the the corresponding .csv file for the figure above.
+Here is the the corresponding spreadsheet for the figure above in Google Docs. From there, download as a .csv file.
 
-<Table 1>
+![Chesapeak Bay Sharpie Spreadsheet][sharpie_offsets]
+
+[sharpie_offsets]: https://github.com/bobm123/LinesTable/blob/master/images/sharpie-gdocs-screenshop.png
 
 When imported in to Fusion 360, will results in a wireframe drawing
 
