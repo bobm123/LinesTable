@@ -74,8 +74,12 @@ def generate_sections(offset_table):
     (x, y, z) = (width, height length). Returns each as a list
     contained in a dictionary'''
 
+    logger.debug('Input to generate offsets')
+    for line in offset_table:
+        logger.debug(line)
+
     # Have a dictionary with line names for keys, list of points for values
-    line_order = ['_upper_cl', 'coaming', 'gunwale', 'sheer', 'chine', 'bottom', 'skeg', '_lower_cl']
+    line_order = ['_upper_cl', 'coaming', 'gunwale', 'sheer', 'chine','r1', 'r2', 'r3', 'bottom', 'skeg', '_lower_cl']
     sections = []
     for line_name in line_order:
         if line_name in offset_table:
@@ -111,6 +115,14 @@ def generate_sections(offset_table):
     return clean_sections, upper, lower
 
 
+def try_float(st):
+    try:
+        x = float(st)
+        return x
+    except ValueError:
+        return st
+
+
 def parse_csv_offsets(filename):
     ''' parse the csv expected offset table fields '''
 
@@ -124,12 +136,13 @@ def parse_csv_offsets(filename):
     # Remove comments lines
     offset_table = [r for r in raw_table if not r[0].startswith('#')]
 
-    # TODO: definitly 'happy path' coding here, so need to deal with
-    # unexpected table formats.
-
     # force rows to lower case
     for i,row in enumerate(offset_table):
         offset_table[i] = [str.lower(x) for x in row]
+
+    # convert any numeric cells to floats
+    for i,row in enumerate(offset_table):
+        offset_table[i] = [try_float(x) for x in row]
 
     # replicate 'dittos' in axis column
     current = ''
@@ -155,8 +168,10 @@ def parse_csv_offsets(filename):
 
     ot_combined = {}
     for line_name in ot_widths:
+        #x = [float(xs) for xs in ot_widths[line_name]]
         x = ot_widths[line_name]
-        y = ot_heights[line_name]
+        #y = [float(ys) for ys in ot_heights[line_name]]
+        y =  ot_heights[line_name]
         z = [float(zs) for zs in ot_lengths['station']]
         line_points = remove_invalid(list(zip(x, y, z)), [])
         ot_combined[line_name] = line_points
