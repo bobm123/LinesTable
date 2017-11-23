@@ -1,8 +1,8 @@
 ## Import Offsets Table
 
-This project is a tool that generate a 3D model of a ship's hull given a table of points in the form of a traditional shipwright's offset or lines table. These tables contain, in theory all the information needed to momdell a ships hull, but locating the individual points using 3D modeling tools can be tedious. Two drawing applications are the target for this project: OpenSCAD and Fusion 360. OpenSCAD is designed to define objects grammatically, so seems like a good first step, but has limited ability to handle curves. Fusion 360 includes 3D modeling and design tools with API for both Python and C++. While these can be 
+This project is a tool that generate a 3D model of a ship's hull given a table of points in the form of a traditional shipwright's offset or lines table. These tables contain, in theory, all the information needed to model a ships hull, but locating the individual points using 3D modeling tools can be tedious. Two drawing applications are the target for this project: OpenSCAD and Fusion 360. OpenSCAD is designed to define objects grammatically, so seems like a good first step, but has limited ability to handle curves. Fusion 360 includes 3D modeling and design tools with API for both Python and C++. While these can be challenging to use, they unlock a rich array of design features.
 
-Input intended to be a CSV file containing the offset data. To make problem a little easier to handle, the tool is fairly opinionated about the table's format. This shouldn't too much of a restrictions as these tables follow a fairly constant pattern. Some human intervention will inevitably be needed, but where necessary should be easily done with spreadsheet editing tools. I've been using google docs to generate the test files, but any application that can produce comma separated values (.csv) files should be fine.
+Inputs are intended to be CSV (comma seperated values) files containing the offset data. As an interim solution they also include a JSON format of the specific data needed by the applicatoins. To make problem a little easier to handle, the tool is fairly opinionated about the table's format. This shouldn't too much of a restrictions as these tables follow a fairly constant pattern. Some human intervention will inevitably be needed. When necessary this should be easy to do with spreadsheet editing tools. I've been using Google docs to generate the test files, but any application that can produce CSV files should be fine.
 
 Here is an example of a fairly typical table of offsets. This one was taken from a reprint of an article by Howard Chapelle on the Chesepeak Bay Sharpie found 
 [here](http://www.duckworksmagazine.com/04/s/articles/chapelle/index.cfm)
@@ -38,5 +38,7 @@ And after a bit more work tracing and modelling structures that go with the impo
 ![Chesapeake Bay Sharpie model][sharpie_model]
 
 [sharpie_model]: https://github.com/bobm123/LinesTable/blob/master/images/sharpie-model-f360-screenshop.png
+
+The project in divided into three main python files: the CSV table import in offset_reader.py, the Fusion 360 specific drawing functions in offsets_draw.py and the Fusion 360 extensions script in ImportOffsets.py. The offset_reader.py can also be run as a stand alone script for testsing and will eventually be used to produce an optional OpenSCAD output. In this mode it curently produces a JSON file that can optionally be used to import the coordiantes by the Fusion 360 script.
 
 
