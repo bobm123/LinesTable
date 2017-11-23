@@ -33,7 +33,7 @@ When imported in to Fusion 360, will results in a wire-frame drawing
 
 [sharpie]: https://github.com/bobm123/LinesTable/blob/master/images/sharpie-f360-screenshop.png
 
-And after a bit more work tracing and modelling structures that goe with the imported hull shape, I came up with this model.
+And after a bit more work tracing and modelling structures that go with the imported hull shape, I came up with this model.
 
 ![Chesapeake Bay Sharpie model][sharpie_model]
 
