@@ -1,10 +1,11 @@
-Import Offsets Table
+## Import Offsets Table
 
-A tool to generate a 3D body (hull) given a table of points in the form of a traditional shipwright's offset or lines table. These table are basically spreadsheets but locating the individual points that they represent using 3D modeling tools can be tedious. Two drawing applications are the target for this project: OpenSCAD and Fusion 360. OpenSCAD is designed to define objects programmatically, so seems like a good first step, but has limited ability to handle curves. Fusion 360 includes 3D modeling and design tools with API for both Python and C++. While these can be a little challenging with a somewhat steam learning curve, importing a design unlocks a rich array of 3D modelingx tools. 
+This project is a tool that generate a 3D model of a ship's hull given a table of points in the form of a traditional shipwright's offset or lines table. These tables contain, in theory all the information needed to momdell a ships hull, but locating the individual points using 3D modeling tools can be tedious. Two drawing applications are the target for this project: OpenSCAD and Fusion 360. OpenSCAD is designed to define objects grammatically, so seems like a good first step, but has limited ability to handle curves. Fusion 360 includes 3D modeling and design tools with API for both Python and C++. While these can be 
 
 Input intended to be a CSV file containing the offset data. To make problem a little easier to handle, the tool is fairly opinionated about the table's format. This shouldn't too much of a restrictions as these tables follow a fairly constant pattern. Some human intervention will inevitably be needed, but where necessary should be easily done with spreadsheet editing tools. I've been using google docs to generate the test files, but any application that can produce comma separated values (.csv) files should be fine.
 
-Here is an example of a fairly typical table of offsets. This one was take from an article on the Chesapeake Bay Sharpie found here
+Here is an example of a fairly typical table of offsets. This one was taken from a reprint of an article by Howard Chapelle on the Chesepeak Bay Sharpie found 
+[here](http://www.duckworksmagazine.com/04/s/articles/chapelle/index.cfm)
 
 ![Chesapeake Bay Sharpie Spreadsheet][sharpie_offsets_original]
 
@@ -32,3 +33,7 @@ When imported in to Fusion 360, will results in a wire-frame drawing
 
 [sharpie]: https://github.com/bobm123/LinesTable/blob/master/images/sharpie-f360-screenshop.png
 
+And after a bit more work tracing and modelling structures that goe with the imported hull shape, I came up with this model.
+
+![Chesapeake Bay Sharpie model][sharpie-model]
+[sharpie]: https://github.com/bobm123/LinesTable/blob/master/images/sharpie-model-f360-screenshop.png
