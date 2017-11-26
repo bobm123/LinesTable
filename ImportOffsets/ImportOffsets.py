@@ -79,6 +79,10 @@ class IotCommandExecuteHandler(adsk.core.CommandEventHandler):
 
             global _offset_data, _user_filename
 
+            if not _offset_data:
+                _ui.messageBox('Load an offset table')
+                return
+
             # Run the actual command code here
             des = adsk.fusion.Design.cast(_app.activeProduct)
             attribs = des.attributes
@@ -98,10 +102,7 @@ class IotCommandExecuteHandler(adsk.core.CommandEventHandler):
                 half_hull = True
 
             scale_factor = float(_scaleFactor.value)
-            if _offset_data:
-                offsets_draw.draw(des, _offset_data, scale_factor, half_hull)
-            else:
-                _ui.messageBox('Load an offset table')
+            offsets_draw.draw(des, _offset_data, scale_factor, half_hull)
 
         except:
             if _ui:
@@ -117,7 +118,7 @@ class IotCommandInputChangedHandler(adsk.core.InputChangedEventHandler):
             eventArgs = adsk.core.InputChangedEventArgs.cast(args)
             changedInput = eventArgs.input
 
-            global _offset_data # TODO: pass values in attributes
+            global _roTextBox, _offset_data # TODO: pass values in attributes
 
             # Determine what changed from changedInput.id and act on it
             if changedInput.id == 'select_file_button':
@@ -165,6 +166,11 @@ class IotCommandValidateInputsHandler(adsk.core.ValidateInputsEventHandler):
             scaleFactor = _scaleFactor.value
             if scaleFactor < 0:
                 _errMessage.text = 'scale factor must be positive'
+                eventArgs.areInputsValid = False
+                return
+
+            if not _offset_data:
+                _errMessage.text = 'Select a file to import'
                 eventArgs.areInputsValid = False
                 return
 
@@ -234,7 +240,7 @@ class IotCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             inputs = cmd.commandInputs
 
             # Create a read only textbox input. 2nd param is a field lable
-            _roTextBox = inputs.addTextBoxCommandInput('readonly_textBox_1', '', 'Select a file to import', 2, True)
+            _roTextBox = inputs.addTextBoxCommandInput('readonly_textBox_1', '', '', 2, True)
             _roTextBox.isFullWidth = True
 
             # Add additional UI widgets here
