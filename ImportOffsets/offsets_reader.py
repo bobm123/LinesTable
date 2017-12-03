@@ -22,8 +22,8 @@ fh = logging.FileHandler('offsets_reader.log')
 fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG) #change to ERROR or WARNING after deplot
-log_fmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-log_short_fmt = logging.Formatter('%(levelname)s - %(message)s')
+log_fmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(lineno)d - %(message)s')
+log_short_fmt = logging.Formatter('%(levelname)s - %(lineno)d - %(message)s')
 fh.setFormatter(log_fmt)
 ch.setFormatter(log_short_fmt)
 logger.addHandler(fh)
@@ -68,7 +68,7 @@ def remove_invalid(plist, replace=None):
         return [p if is_valid(p) else replace for p in plist]
 
 
-def generate_sections(offset_table):
+def generate_sections(offset_table, line_order):
     '''Generate the cross sections in 3D at each station
     from the given lines and organizes the lines into coordinates
     (x, y, z) = (width, height length). Returns each as a list
@@ -78,12 +78,10 @@ def generate_sections(offset_table):
     for line in offset_table:
         logger.debug(line)
 
-    # Have a dictionary with line names for keys, list of points for values
-    line_order = ['_upper_cl', 'coaming', 'gunwale', 'sheer', 'chine','r1', 'r2', 'r3', 'bottom', 'skeg', '_lower_cl']
     sections = []
-    for line_name in line_order:
-        if line_name in offset_table:
-            sections.append(offset_table[line_name])
+    for line in line_order:
+        if line in offset_table:
+            sections.append(offset_table[line])
 
     logger.debug('Un-transformed sections')
     logger.debug(sections)
@@ -154,12 +152,19 @@ def parse_csv_offsets(filename):
         offset_table[i][0] = current
 
     # convert feet-inches-eights to decimal inches
+    logger.debug('modified table:')
     for i,row in enumerate(offset_table):
         offset_table[i] = [fie_to_di(x) for x in row]
+        logger.debug ('row {0}: {1}'.format(i, offset_table[i]))
 
-    logger.debug('modified table:')
-    for i, row in enumerate(offset_table):
-        logger.debug ('row {0}: {1}'.format(i, row))
+    # cerate a list of lines names preserving the order they appeared
+    seen = set()
+    seen_add = seen.add
+    line_order = [row[1] for row in offset_table if not (row[1] in seen or seen_add(row[1]))]
+    line_order = line_order[2:]
+
+    logger.debug('extracted the following line names')
+    logger.debug(line_order)
 
     # Break out each set of dimension and recombine as (x,y,z)
     ot_widths = get_all_axis(offset_table, 'width')
@@ -176,7 +181,7 @@ def parse_csv_offsets(filename):
         line_points = remove_invalid(list(zip(x, y, z)), [])
         ot_combined[line_name] = line_points
 
-    return ot_combined
+    return ot_combined, line_order
 
 
 def rotate_point(cy, cz, angle, p):
@@ -240,11 +245,11 @@ def offset_reader(filename):
     offset_data = {}
 
     # Read the lines from an offset table
-    lines = parse_csv_offsets(filename)
+    lines, line_order = parse_csv_offsets(filename)
     offset_data['lines'] = lines
 
     # Add a set of cross sections
-    offset_data['sections'], upper, lower = generate_sections(lines)
+    offset_data['sections'], upper, lower = generate_sections(lines, line_order)
     offset_data['lines']['_upper_cl'] = upper
     offset_data['lines']['_lower_cl'] = lower
 
