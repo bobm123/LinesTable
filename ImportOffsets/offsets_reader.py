@@ -32,7 +32,7 @@ logger.addHandler(ch)
 
 
 def fie_to_di(d):
-    '''Convets dimenstion from feet-inches-eigths to decimal inches'''
+    '''Converts dimensions from feet-inches-eigths to decimal inches'''
 
     if isinstance(d, str):
         fie = d.split('-')
@@ -99,6 +99,7 @@ def generate_sections(offset_table, line_order):
         upper.append(css[0])
         lower.append(css[-1])
 
+    # Project the top and bottom of profile as their own lines
     upper = [(0.0, p[1], p[2]) for p in upper]
     lower = [(0.0, p[1], p[2]) for p in lower]
 
@@ -171,6 +172,12 @@ def parse_csv_offsets(filename):
     ot_heights = get_all_axis(offset_table, 'height')
     ot_lengths = get_all_axis(offset_table, 'length')
 
+    # Pull out optional section angles
+    ot_angles = get_all_axis(offset_table, 'angle')
+
+    # TODO: clean this up, need to skip the '' key
+    ot_angles = ot_angles['']
+
     ot_combined = {}
     for line_name in ot_widths:
         #x = [float(xs) for xs in ot_widths[line_name]]
@@ -181,7 +188,7 @@ def parse_csv_offsets(filename):
         line_points = remove_invalid(list(zip(x, y, z)), [])
         ot_combined[line_name] = line_points
 
-    return ot_combined, line_order
+    return ot_combined, line_order, ot_angles
 
 
 def rotate_point(cy, cz, angle, p):
@@ -245,13 +252,15 @@ def offset_reader(filename):
     offset_data = {}
 
     # Read the lines from an offset table
-    lines, line_order = parse_csv_offsets(filename)
+    lines, line_order, section_angles = parse_csv_offsets(filename)
     offset_data['lines'] = lines
 
     # Add a set of cross sections
     offset_data['sections'], upper, lower = generate_sections(lines, line_order)
     offset_data['lines']['_upper_cl'] = upper
     offset_data['lines']['_lower_cl'] = lower
+    if section_angles:
+        offset_data['angle'] = section_angles
 
     return offset_data
 
@@ -283,11 +292,24 @@ if __name__ == "__main__":
 
     offset_data = offset_reader(args.filename)
 
-    # Apply optional rake angles at bow and transom
+    # Use angles from table if they were given
+    # TODO: apply angle at each station
+    # TODO: use command line as override
     bindex = 0
-    offset_data = rake_angle(offset_data, bindex, 90 - float(args.bow_angle))
     tindex = len(offset_data['sections']) - 1
-    offset_data = rake_angle(offset_data, tindex, 90 - float(args.transom_angle))
+    if 'angle' in offset_data:
+        logger.debug("apply section angles from tables")
+        logger.debug(offset_data['angle'])
+        ba = offset_data['angle'][bindex]
+        ta = offset_data['angle'][tindex]
+    else:
+        logger.debug("apply section angles from command line")
+        ba = float(args.bow_angle)
+        ta = float(args.transom_angle)
+
+    # Apply optional rake angles at bow and transom
+    offset_data = rake_angle(offset_data, bindex, 90 - ba)
+    offset_data = rake_angle(offset_data, tindex, 90 - ta)
 
     out_filename, _ = os.path.splitext(args.filename)
     out_filename = out_filename + '.json'

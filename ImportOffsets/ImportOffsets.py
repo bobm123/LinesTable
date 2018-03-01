@@ -89,11 +89,16 @@ class IotCommandExecuteHandler(adsk.core.CommandEventHandler):
             attribs.add('ImportOffset', 'filename', str(_user_filename))
 
             bindex = 0
-            bowAngle = math.degrees(unitsMgr.evaluateExpression(_bowAngle.expression, "deg"))
-            _offset_data = offsets_reader.rake_angle(_offset_data, bindex, 90 - bowAngle)
-
             tindex = len(_offset_data['sections']) - 1
-            transomAngle = math.degrees(unitsMgr.evaluateExpression(_transomAngle.expression, "deg"))
+
+            if 'angle' in _offset_data:
+                bowAngle = _offset_data['angle'][bindex]
+                transomAngle = _offset_data['angle'][tindex]
+            else:
+                bowAngle = math.degrees(unitsMgr.evaluateExpression(_bowAngle.expression, "deg"))
+                transomAngle = math.degrees(unitsMgr.evaluateExpression(_transomAngle.expression, "deg"))
+
+            _offset_data = offsets_reader.rake_angle(_offset_data, bindex, 90 - bowAngle)
             _offset_data = offsets_reader.rake_angle(_offset_data, tindex, 90 - transomAngle)
 
             if _halfHull.selectedItem.name == 'Full':
