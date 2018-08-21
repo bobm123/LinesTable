@@ -1,8 +1,9 @@
-#!/usr/bin/env python3
-'''
-Generates a set of points defining the "lines" and sections
+# -*- coding: utf-8 -*-
+
+"""
+Generates a set of points defining the 'lines' and sections
 of a boat hull given a table of offsets.
-'''
+"""
 
 __author__ = "Robert Marchese"
 __version__ = "0.1.0"
@@ -12,7 +13,7 @@ import argparse
 import csv
 import json
 import logging
-from math import isnan, radians, sin, cos
+from math import radians, sin, cos
 import os
 
 # Setup Logging
@@ -21,25 +22,27 @@ logger.setLevel(logging.DEBUG)
 fh = logging.FileHandler('offsets_reader.log')
 fh.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG) #change to ERROR or WARNING after deplot
-log_fmt = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(lineno)d - %(message)s')
+
+# change to ERROR or WARNING after deplot
+ch.setLevel(logging.DEBUG)
+log_fmt = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(lineno)d - %(message)s')
 log_short_fmt = logging.Formatter('%(levelname)s - %(lineno)d - %(message)s')
 fh.setFormatter(log_fmt)
 ch.setFormatter(log_short_fmt)
 logger.addHandler(fh)
 logger.addHandler(ch)
-# Setup Logging
 
 
 def fie_to_di(d):
-    '''Converts dimensions from feet-inches-eigths to decimal inches'''
+    '''Converts a dimension d from feet-inches-eigths to decimal inches'''
 
     if isinstance(d, str):
         fie = d.split('-')
     else:
         return d
 
-    #TODO: fie[1] in range(0,12), fie[2] in range(0,8)
+    # TODO: fie[1] in range(0,12), fie[2] in range(0,8)
     if len(fie) == 3:
         return 12*float(fie[0])+float(fie[1])+float(fie[2])/8.0
     else:
@@ -49,7 +52,7 @@ def fie_to_di(d):
 def get_all_axis(table, axis):
     '''return all rows with a specific axis (width, height, length)
     in a dictionary and set 'name' as the key '''
-    selected = {r[1]:r[2:] for r in table if axis in r[0]}
+    selected = {r[1]: r[2:] for r in table if axis in r[0]}
 
     return selected
 
@@ -122,6 +125,14 @@ def try_float(st):
         return st
 
 
+def lineOrder(table):
+    s = set()
+    s_add = s.add
+    order = [r[1] for r in table if not (r[1] in s or s_add(r[1]))]
+
+    return order
+
+
 def parse_csv_offsets(filename):
     ''' parse the csv expected offset table fields '''
 
@@ -130,22 +141,22 @@ def parse_csv_offsets(filename):
 
     logger.debug('original table:')
     for i, row in enumerate(raw_table):
-        logger.debug ('row {0}: {1}'.format(i, row))
+        logger.debug('row {0}: {1}'.format(i, row))
 
     # Remove comments lines
     offset_table = [r for r in raw_table if not r[0].startswith('#')]
 
     # force rows to lower case
-    for i,row in enumerate(offset_table):
+    for i, row in enumerate(offset_table):
         offset_table[i] = [str.lower(x) for x in row]
 
     # convert any numeric cells to floats
-    for i,row in enumerate(offset_table):
+    for i, row in enumerate(offset_table):
         offset_table[i] = [try_float(x) for x in row]
 
     # replicate 'dittos' in axis column
     current = ''
-    for i,row in enumerate(offset_table):
+    for i, row in enumerate(offset_table):
         if row[0] and not current == row[0]:
             current = row[0]
         else:
@@ -154,20 +165,18 @@ def parse_csv_offsets(filename):
 
     # convert feet-inches-eights to decimal inches
     logger.debug('modified table:')
-    for i,row in enumerate(offset_table):
+    for i, row in enumerate(offset_table):
         offset_table[i] = [fie_to_di(x) for x in row]
-        logger.debug ('row {0}: {1}'.format(i, offset_table[i]))
+        logger.debug('row {0}: {1}'.format(i, offset_table[i]))
 
-    # cerate a list of lines names preserving the order they appeared
-    seen = set()
-    seen_add = seen.add
-    line_order = [row[1] for row in offset_table if not (row[1] in seen or seen_add(row[1]))]
+    # create a list of lines names preserving the order they appeared
+    line_order = lineOrder(offset_table)
     line_order = line_order[2:]
 
     logger.debug('extracted the following line names')
     logger.debug(line_order)
 
-    # Break out each set of dimension and recombine as (x,y,z)
+    # Break out each set of dimension and recombine as (x, y, z)
     ot_widths = get_all_axis(offset_table, 'width')
     ot_heights = get_all_axis(offset_table, 'height')
     ot_lengths = get_all_axis(offset_table, 'length')
@@ -176,14 +185,12 @@ def parse_csv_offsets(filename):
     ot_angles = get_all_axis(offset_table, 'angle')
 
     # TODO: clean this up, need to skip the '' key
-    ot_angles = ot_angles['']
+    ot_angles = ot_angles.get('', None)
 
     ot_combined = {}
     for line_name in ot_widths:
-        #x = [float(xs) for xs in ot_widths[line_name]]
         x = ot_widths[line_name]
-        #y = [float(ys) for ys in ot_heights[line_name]]
-        y =  ot_heights[line_name]
+        y = ot_heights[line_name]
         z = [float(zs) for zs in ot_lengths['station']]
         line_points = remove_invalid(list(zip(x, y, z)), [])
         ot_combined[line_name] = line_points
@@ -213,7 +220,6 @@ def rotate_point(cy, cz, angle, p):
 
 def rake_angle(offsets, st_index, angle):
     xc_original = offsets['sections'][st_index]
-    logger.debug("original section {0} points\n{1}".format(st_index, xc_original))
 
     # Angle is givent in degrees from the baseline
     angle = radians(angle)
@@ -230,10 +236,8 @@ def rake_angle(offsets, st_index, angle):
         xc_new.append(pt)
     offsets['sections'][st_index] = xc_new
 
-    logger.debug("modified section {0} points\n{1}".format(st_index, xc_new))
-
     # Apply rotation in xz plane around y = y0 to lines
-    for name,coords in offsets['lines'].items():
+    for name, coords in offsets['lines'].items():
         if coords[st_index]:
             logger.debug("modifying {0} at station {1}".format(name, st_index))
             pt = list(coords[st_index])
@@ -256,7 +260,8 @@ def offset_reader(filename):
     offset_data['lines'] = lines
 
     # Add a set of cross sections
-    offset_data['sections'], upper, lower = generate_sections(lines, line_order)
+    sections, upper, lower = generate_sections(lines, line_order)
+    offset_data['sections'] = sections
     offset_data['lines']['_upper_cl'] = upper
     offset_data['lines']['_lower_cl'] = lower
     if section_angles:
@@ -274,12 +279,12 @@ if __name__ == "__main__":
 
     # Optional arguments that require a parameter
     parser.add_argument("-b", "--bow", action="store", 
-        dest="bow_angle", default=90,
-        help="Angle of the bow measured from the baseline ")
+                        dest="bow_angle", default=90,
+                        help="Angle of the bow measured from the baseline ")
 
     parser.add_argument("-t", "--transom", action="store", 
-        dest="transom_angle", default=90,
-        help="Angle of the transom measured from the baseline")
+                        dest="transom_angle", default=90,
+                        help="Angle of the transom measured from the baseline")
 
     # Specify output of "--version"
     parser.add_argument(
