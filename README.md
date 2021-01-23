@@ -4,8 +4,7 @@ This project is a tool that generate a 3D model of a ship's hull given a table o
 
 Inputs are intended to be CSV (comma seperated values) files containing the offset data. As an interim solution they also include a JSON format of the specific data needed by the applicatoins. To make problem a little easier to handle, the tool is fairly opinionated about the table's format. This shouldn't too much of a restrictions as these tables follow a fairly constant pattern. Some human intervention will inevitably be needed. When necessary this should be easy to do with spreadsheet editing tools. I've been using Google docs to generate the test files, but any application that can produce CSV files should be fine.
 
-Here is an example of a fairly typical table of offsets. This one was taken from a reprint of an article by Howard Chapelle on the Chesepeak Bay Sharpie found 
-[here](http://www.duckworksmagazine.com/04/s/articles/chapelle/index.cfm)
+Here is an example of a fairly typical table of offsets. This one was taken from a reprint of an article by Howard Chapelle on the Chesepeak Bay Sharpie found on the Duckworks magazine [archive](https://www.duckworksmagazine.com/04/s/articles/chapelle/index.htm)
 
 ![Chesapeake Bay Sharpie Spreadsheet][sharpie_offsets_original]
 
